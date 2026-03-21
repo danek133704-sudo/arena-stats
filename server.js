@@ -1,51 +1,65 @@
 const express = require('express');
-const mongoose = require('mongoose');
+const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = 'arena_stats_secret_key_2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'arena_stats_secret_key_2024';
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// MongoDB connection
-mongoose.connect('mongodb+srv://danek133704_db_user:WukODLD07o27xzpU@cluster0.f6h3ilv.mongodb.net/?appName=Cluster0', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+// PostgreSQL connection
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
 });
 
-// Schemas
-const UserSchema = new mongoose.Schema({
-    username: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
-    discord: String,
-    gameNick: String,
-    createdAt: { type: Date, default: Date.now }
-});
+// Initialize database tables
+async function initDb() {
+    const client = await pool.connect();
+    try {
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(100) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                discord VARCHAR(100),
+                game_nick VARCHAR(100),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS stats (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                username VARCHAR(100),
+                game_nick VARCHAR(100),
+                kills INTEGER,
+                kill_percent DECIMAL(10,2),
+                damage_percent DECIMAL(10,2),
+                damage INTEGER,
+                video_link TEXT,
+                server VARCHAR(100),
+                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        console.log('Database initialized successfully');
+    } catch (err) {
+        console.error('Database init error:', err.message);
+    } finally {
+        client.release();
+    }
+}
 
-const StatSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    username: String,
-    gameNick: String,
-    kills: Number,
-    killPercent: Number,
-    damagePercent: Number,
-    damage: Number,
-    videoLink: String,
-    server: String,
-    date: { type: Date, default: Date.now }
-});
-
-const User = mongoose.model('User', UserSchema);
-const Stat = mongoose.model('Stat', StatSchema);
+initDb();
 
 // Middleware для проверки токена
 const authenticateToken = (req, res, next) => {
@@ -62,158 +76,165 @@ const authenticateToken = (req, res, next) => {
 };
 
 // API Routes
-// Регистрация
 app.post('/api/register', async (req, res) => {
     try {
         const { username, password, discord, gameNick } = req.body;
         
-        const existingUser = await User.findOne({ username });
-        if (existingUser) {
+        const existing = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+        if (existing.rows.length > 0) {
             return res.status(400).json({ error: 'Пользователь уже существует' });
         }
         
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({
-            username,
-            password: hashedPassword,
-            discord,
-            gameNick: gameNick || username
-        });
+        const result = await pool.query(
+            'INSERT INTO users (username, password, discord, game_nick) VALUES ($1, $2, $3, $4) RETURNING id, username, discord, game_nick',
+            [username, hashedPassword, discord, gameNick || username]
+        );
         
-        await user.save();
-        res.json({ message: 'Регистрация успешна' });
+        res.json({ message: 'Регистрация успешна', user: result.rows[0] });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
-// Вход
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         
-        const user = await User.findOne({ username });
-        if (!user) {
+        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        if (result.rows.length === 0) {
             return res.status(400).json({ error: 'Пользователь не найден' });
         }
         
+        const user = result.rows[0];
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
             return res.status(400).json({ error: 'Неверный пароль' });
         }
         
-        const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET);
+        const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET);
         res.json({
             token,
             user: {
-                id: user._id,
+                id: user.id,
                 username: user.username,
                 discord: user.discord,
-                gameNick: user.gameNick
+                gameNick: user.game_nick
             }
         });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
-// Получить профиль
 app.get('/api/profile', authenticateToken, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('-password');
-        res.json(user);
+        const result = await pool.query('SELECT id, username, discord, game_nick FROM users WHERE id = $1', [req.user.id]);
+        res.json(result.rows[0]);
     } catch (error) {
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
-// Обновить профиль
 app.put('/api/profile', authenticateToken, async (req, res) => {
     try {
         const { discord, gameNick } = req.body;
-        await User.findByIdAndUpdate(req.user.id, { discord, gameNick });
+        await pool.query('UPDATE users SET discord = $1, game_nick = $2 WHERE id = $3', [discord, gameNick, req.user.id]);
         res.json({ message: 'Профиль обновлен' });
     } catch (error) {
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
-// Добавить статистику
 app.post('/api/stats', authenticateToken, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
-        const stat = new Stat({
-            userId: req.user.id,
-            username: user.username,
-            gameNick: user.gameNick,
-            ...req.body
-        });
+        const { kills, killPercent, damagePercent, damage, videoLink, server } = req.body;
         
-        await stat.save();
-        res.json(stat);
+        const userResult = await pool.query('SELECT username, game_nick FROM users WHERE id = $1', [req.user.id]);
+        const user = userResult.rows[0];
+        
+        const result = await pool.query(
+            `INSERT INTO stats (user_id, username, game_nick, kills, kill_percent, damage_percent, damage, video_link, server)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+            [req.user.id, user.username, user.game_nick, kills, killPercent, damagePercent, damage, videoLink, server]
+        );
+        
+        res.json(result.rows[0]);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
-// Получить все статистики (для лидерборда)
 app.get('/api/stats', async (req, res) => {
     try {
-        const stats = await Stat.find()
-            .sort({ date: -1 })
-            .limit(100);
-        res.json(stats);
+        const result = await pool.query(
+            'SELECT * FROM stats ORDER BY date DESC LIMIT 100'
+        );
+        res.json(result.rows);
     } catch (error) {
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
-// Получить статистику пользователя
 app.get('/api/stats/user', authenticateToken, async (req, res) => {
     try {
-        const stats = await Stat.find({ userId: req.user.id }).sort({ date: -1 });
-        res.json(stats);
+        const result = await pool.query(
+            'SELECT * FROM stats WHERE user_id = $1 ORDER BY date DESC',
+            [req.user.id]
+        );
+        res.json(result.rows);
     } catch (error) {
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
-// Получить лидерборд
 app.get('/api/leaderboard', async (req, res) => {
     try {
-        const leaderboard = await Stat.aggregate([
-            {
-                $group: {
-                    _id: '$userId',
-                    username: { $first: '$username' },
-                    gameNick: { $first: '$gameNick' },
-                    totalKills: { $sum: '$kills' },
-                    totalDamage: { $sum: '$damage' },
-                    avgKillPercent: { $avg: '$killPercent' },
-                    avgDamagePercent: { $avg: '$damagePercent' },
-                    statsCount: { $sum: 1 },
-                    latestVideo: { $last: '$videoLink' },
-                    latestDate: { $last: '$date' }
-                }
-            },
-            { $sort: { totalKills: -1 } },
-            { $limit: 50 }
-        ]);
+        const result = await pool.query(`
+            SELECT 
+                user_id as id,
+                username,
+                game_nick,
+                SUM(kills) as total_kills,
+                SUM(damage) as total_damage,
+                AVG(kill_percent) as avg_kill_percent,
+                AVG(damage_percent) as avg_damage_percent,
+                COUNT(*) as stats_count,
+                (SELECT video_link FROM stats s2 WHERE s2.user_id = stats.user_id ORDER BY date DESC LIMIT 1) as latest_video
+            FROM stats
+            GROUP BY user_id, username, game_nick
+            ORDER BY total_kills DESC
+            LIMIT 50
+        `);
         
-        res.json(leaderboard);
+        const formatted = result.rows.map(row => ({
+            _id: row.id,
+            username: row.username,
+            gameNick: row.game_nick,
+            totalKills: parseInt(row.total_kills),
+            totalDamage: parseInt(row.total_damage),
+            avgKillPercent: parseFloat(row.avg_kill_percent),
+            avgDamagePercent: parseFloat(row.avg_damage_percent),
+            statsCount: parseInt(row.stats_count),
+            latestVideo: row.latest_video
+        }));
+        
+        res.json(formatted);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
-// Удалить статистику
 app.delete('/api/stats/:id', authenticateToken, async (req, res) => {
     try {
-        const stat = await Stat.findById(req.params.id);
-        if (stat.userId.toString() !== req.user.id) {
+        const result = await pool.query('DELETE FROM stats WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.user.id]);
+        if (result.rows.length === 0) {
             return res.status(403).json({ error: 'Нет прав' });
         }
-        await stat.deleteOne();
         res.json({ message: 'Статистика удалена' });
     } catch (error) {
         res.status(500).json({ error: 'Ошибка сервера' });
