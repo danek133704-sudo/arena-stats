@@ -12,28 +12,34 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
-// Проверка подключения к базе данных
+console.log('🔧 Подключение к базе данных...');
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? '✓ Установлена' : '✗ НЕ УСТАНОВЛЕНА');
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
-// Простая проверка при запуске
-pool.connect((err, client, release) => {
-    if (err) {
+// Функция для проверки подключения
+async function testConnection() {
+    try {
+        const client = await pool.connect();
+        console.log('✅ База данных подключена успешно');
+        client.release();
+        return true;
+    } catch (err) {
         console.error('❌ Ошибка подключения к базе данных:', err.message);
-        console.error('DATABASE_URL:', process.env.DATABASE_URL ? '✓ Установлена' : '✗ НЕ УСТАНОВЛЕНА');
-    } else {
-        console.log('✅ База данных подключена');
-        release();
+        return false;
     }
-});
+}
 
 // Создание таблиц
 async function initDb() {
     try {
+        const client = await pool.connect();
+        
         // Таблица пользователей
-        await pool.query(`
+        await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(100) UNIQUE NOT NULL,
@@ -46,7 +52,7 @@ async function initDb() {
         `);
         
         // Таблица статистики
-        await pool.query(`
+        await client.query(`
             CREATE TABLE IF NOT EXISTS stats (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id),
@@ -65,24 +71,29 @@ async function initDb() {
         `);
         
         // Создаем админа если нет
-        const adminCheck = await pool.query('SELECT id FROM users WHERE username = $1', ['admin']);
+        const adminCheck = await client.query('SELECT id FROM users WHERE username = $1', ['admin']);
         if (adminCheck.rows.length === 0) {
             const hash = await bcrypt.hash('admin123', 10);
-            await pool.query(
+            await client.query(
                 'INSERT INTO users (username, password, role, game_nick) VALUES ($1, $2, $3, $4)',
                 ['admin', hash, 'admin', 'Admin']
             );
             console.log('✅ Админ создан: admin / admin123');
         }
         
-        console.log('✅ Таблицы созданы');
+        console.log('✅ Таблицы созданы/проверены');
+        client.release();
     } catch (err) {
         console.error('❌ Ошибка создания таблиц:', err.message);
     }
 }
 
-// Запускаем инициализацию
-initDb();
+// Запускаем инициализацию после проверки подключения
+testConnection().then(connected => {
+    if (connected) {
+        initDb();
+    }
+});
 
 // Главная страница
 app.get('/', (req, res) => {
@@ -144,32 +155,34 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Получить профиль
-app.get('/api/profile', async (req, res) => {
+// Проверка токена
+const auth = async (req, res, next) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ error: 'Нет токена' });
-        
         const decoded = jwt.verify(token, JWT_SECRET);
-        const result = await pool.query('SELECT id, username, discord, game_nick, role FROM users WHERE id = $1', [decoded.id]);
-        
-        if (result.rows.length === 0) return res.status(404).json({ error: 'Пользователь не найден' });
-        res.json(result.rows[0]);
+        req.user = decoded;
+        next();
     } catch (error) {
         res.status(401).json({ error: 'Неверный токен' });
+    }
+};
+
+// Получить профиль
+app.get('/api/profile', auth, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, username, discord, game_nick, role FROM users WHERE id = $1', [req.user.id]);
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Ошибка' });
     }
 });
 
 // Обновить профиль
-app.put('/api/profile', async (req, res) => {
+app.put('/api/profile', auth, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ error: 'Нет токена' });
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
         const { discord, gameNick } = req.body;
-        
-        await pool.query('UPDATE users SET discord = $1, game_nick = $2 WHERE id = $3', [discord, gameNick, decoded.id]);
+        await pool.query('UPDATE users SET discord = $1, game_nick = $2 WHERE id = $3', [discord, gameNick, req.user.id]);
         res.json({ message: 'Профиль обновлен' });
     } catch (error) {
         res.status(500).json({ error: 'Ошибка' });
@@ -177,21 +190,17 @@ app.put('/api/profile', async (req, res) => {
 });
 
 // Добавить статистику
-app.post('/api/stats', async (req, res) => {
+app.post('/api/stats', auth, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ error: 'Нет токена' });
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
         const { kills, killPercent, damagePercent, damage, videoLink, screenshot, server } = req.body;
         
-        const userResult = await pool.query('SELECT username, game_nick FROM users WHERE id = $1', [decoded.id]);
+        const userResult = await pool.query('SELECT username, game_nick FROM users WHERE id = $1', [req.user.id]);
         const user = userResult.rows[0];
         
         await pool.query(
             `INSERT INTO stats (user_id, username, game_nick, kills, kill_percent, damage_percent, damage, video_link, screenshot, server)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-            [decoded.id, user.username, user.game_nick, kills, killPercent, damagePercent, damage, videoLink, screenshot, server]
+            [req.user.id, user.username, user.game_nick, kills, killPercent, damagePercent, damage, videoLink, screenshot, server]
         );
         
         res.json({ message: 'Статистика добавлена' });
@@ -202,32 +211,22 @@ app.post('/api/stats', async (req, res) => {
 });
 
 // Получить свою статистику
-app.get('/api/stats/my', async (req, res) => {
+app.get('/api/stats/my', auth, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ error: 'Нет токена' });
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const result = await pool.query('SELECT * FROM stats WHERE user_id = $1 ORDER BY date DESC', [decoded.id]);
+        const result = await pool.query('SELECT * FROM stats WHERE user_id = $1 ORDER BY date DESC', [req.user.id]);
         res.json(result.rows);
     } catch (error) {
         res.status(500).json({ error: 'Ошибка' });
     }
 });
 
-// Получить всю статистику (для админа)
-app.get('/api/stats/all', async (req, res) => {
+// Получить всю статистику (админ)
+app.get('/api/stats/all', auth, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ error: 'Нет токена' });
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const userResult = await pool.query('SELECT role FROM users WHERE id = $1', [decoded.id]);
-        
+        const userResult = await pool.query('SELECT role FROM users WHERE id = $1', [req.user.id]);
         if (userResult.rows[0]?.role !== 'admin') {
             return res.status(403).json({ error: 'Нет прав' });
         }
-        
         const result = await pool.query('SELECT * FROM stats ORDER BY date DESC');
         res.json(result.rows);
     } catch (error) {
@@ -236,18 +235,12 @@ app.get('/api/stats/all', async (req, res) => {
 });
 
 // Подтвердить статистику (админ)
-app.put('/api/stats/:id/verify', async (req, res) => {
+app.put('/api/stats/:id/verify', auth, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ error: 'Нет токена' });
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const userResult = await pool.query('SELECT role FROM users WHERE id = $1', [decoded.id]);
-        
+        const userResult = await pool.query('SELECT role FROM users WHERE id = $1', [req.user.id]);
         if (userResult.rows[0]?.role !== 'admin') {
             return res.status(403).json({ error: 'Нет прав' });
         }
-        
         await pool.query('UPDATE stats SET verified = true WHERE id = $1', [req.params.id]);
         res.json({ message: 'Подтверждено' });
     } catch (error) {
@@ -256,18 +249,12 @@ app.put('/api/stats/:id/verify', async (req, res) => {
 });
 
 // Удалить статистику (админ)
-app.delete('/api/stats/:id', async (req, res) => {
+app.delete('/api/stats/:id', auth, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ error: 'Нет токена' });
-        
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const userResult = await pool.query('SELECT role FROM users WHERE id = $1', [decoded.id]);
-        
+        const userResult = await pool.query('SELECT role FROM users WHERE id = $1', [req.user.id]);
         if (userResult.rows[0]?.role !== 'admin') {
             return res.status(403).json({ error: 'Нет прав' });
         }
-        
         await pool.query('DELETE FROM stats WHERE id = $1', [req.params.id]);
         res.json({ message: 'Удалено' });
     } catch (error) {
@@ -285,7 +272,8 @@ app.get('/api/leaderboard', async (req, res) => {
                 game_nick,
                 SUM(kills) as total_kills,
                 SUM(damage) as total_damage,
-                COUNT(*) as stats_count
+                COUNT(*) as stats_count,
+                MAX(date) as last_activity
             FROM stats
             WHERE verified = true
             GROUP BY user_id, username, game_nick
@@ -303,5 +291,4 @@ app.get('/api/leaderboard', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Сервер запущен на порту ${PORT}`);
     console.log(`📱 Сайт доступен: http://localhost:${PORT}`);
-    console.log(`🔑 Админ: admin / admin123`);
 });
