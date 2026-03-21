@@ -4,37 +4,35 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
-// Файл для хранения данных
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// Инициализация данных
 let data = { users: [], stats: [] };
 
 function loadData() {
     try {
         if (fs.existsSync(DATA_FILE)) {
             data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+            console.log(`📁 Загружено: ${data.users.length} пользователей, ${data.stats.length} записей`);
         } else {
-            // Создаём админа по умолчанию
             data = {
                 users: [{ id: 1, username: 'admin', password: 'admin123', gameNick: 'Admin', discord: '', role: 'admin' }],
                 stats: []
             };
             saveData();
+            console.log('📁 Создан новый файл данных');
         }
     } catch(e) { console.log('Ошибка загрузки:', e); }
 }
 
 function saveData() {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+    console.log('💾 Данные сохранены');
 }
 
-// ============= API РОУТЫ =============
-
-// Лидерборд
+// API
 app.get('/api/leaderboard', (req, res) => {
     const leaderboard = {};
     data.stats.forEach(stat => {
@@ -44,7 +42,8 @@ app.get('/api/leaderboard', (req, res) => {
                 username: stat.username, 
                 gameNick: stat.gameNick, 
                 kills: 0, 
-                damage: 0 
+                damage: 0,
+                videoLink: stat.videoLink
             };
         }
         leaderboard[stat.username].kills += stat.kills || 0;
@@ -53,7 +52,6 @@ app.get('/api/leaderboard', (req, res) => {
     res.json(Object.values(leaderboard).sort((a,b) => b.kills - a.kills));
 });
 
-// Регистрация
 app.post('/api/register', (req, res) => {
     const { username, password, gameNick, discord } = req.body;
     if (data.users.find(u => u.username === username)) {
@@ -71,7 +69,6 @@ app.post('/api/register', (req, res) => {
     res.json({ success: true });
 });
 
-// Вход
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     const user = data.users.find(u => u.username === username && u.password === password);
@@ -88,86 +85,74 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// ✅ НОВЫЙ РОУТ: Обновить профиль
 app.put('/api/profile', (req, res) => {
     const { username, discord, gameNick } = req.body;
     const user = data.users.find(u => u.username === username);
-    
-    if (!user) {
-        return res.status(404).json({ error: 'Пользователь не найден' });
-    }
-    
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
     if (discord !== undefined) user.discord = discord;
     if (gameNick !== undefined) user.gameNick = gameNick;
-    
     saveData();
-    res.json({ 
-        success: true, 
-        user: { 
-            username: user.username, 
-            discord: user.discord, 
-            gameNick: user.gameNick,
-            role: user.role 
-        } 
-    });
+    res.json({ success: true, user: { username: user.username, discord: user.discord, gameNick: user.gameNick, role: user.role } });
 });
 
-// Добавить статистику
 app.post('/api/stats', (req, res) => {
-    const { username, kills, damage, videoLink, screenshot, server } = req.body;
+    const { username, kills, killPercent, damagePercent, damage, videoLink, screenshot, server } = req.body;
     const user = data.users.find(u => u.username === username);
-    data.stats.push({
+    const newStat = {
         id: Date.now(),
         username,
         gameNick: user?.gameNick || username,
         kills: kills || 0,
+        killPercent: killPercent || 0,
+        damagePercent: damagePercent || 0,
         damage: damage || 0,
         videoLink,
         screenshot,
         server,
         verified: username === 'admin' ? true : false,
         date: new Date().toISOString()
-    });
+    };
+    data.stats.push(newStat);
     saveData();
-    res.json({ success: true });
+    console.log(`📊 Добавлена статистика от ${username}: ${kills} убийств, ${damage} урона, verified: ${newStat.verified}`);
+    res.json({ success: true, stat: newStat });
 });
 
-// Моя статистика
 app.get('/api/stats/my', (req, res) => {
     const username = req.headers.username;
     const myStats = data.stats.filter(s => s.username === username);
     res.json(myStats);
 });
 
-// Вся статистика (админ)
 app.get('/api/stats/all', (req, res) => {
+    console.log(`📋 Запрошена вся статистика: ${data.stats.length} записей`);
     res.json(data.stats);
 });
 
-// Подтвердить статистику (админ)
 app.put('/api/stats/:id/verify', (req, res) => {
     const stat = data.stats.find(s => s.id == req.params.id);
-    if (stat) stat.verified = true;
-    saveData();
+    if (stat) {
+        stat.verified = true;
+        saveData();
+        console.log(`✅ Подтверждена статистика ID ${req.params.id}`);
+    }
     res.json({ success: true });
 });
 
-// Удалить статистику (админ)
 app.delete('/api/stats/:id', (req, res) => {
     data.stats = data.stats.filter(s => s.id != req.params.id);
     saveData();
+    console.log(`🗑️ Удалена статистика ID ${req.params.id}`);
     res.json({ success: true });
 });
 
-// Главная
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Загружаем данные и запускаем
 loadData();
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Сервер запущен на порту ${PORT}`);
     console.log(`👑 Админ: admin / admin123`);
-    console.log(`📁 Данные сохраняются в файл data.json`);
+    console.log(`📊 Всего записей: ${data.stats.length}`);
 });
