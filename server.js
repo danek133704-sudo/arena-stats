@@ -57,15 +57,17 @@ app.post('/api/register', (req, res) => {
     if (data.users.find(u => u.username === username)) {
         return res.status(400).json({ error: 'Пользователь уже существует' });
     }
+    const role = username === 'admin' ? 'admin' : 'user';
     data.users.push({
         id: Date.now(),
         username,
         password,
         gameNick: gameNick || username,
         discord: discord || '',
-        role: username === 'admin' ? 'admin' : 'user'
+        role: role
     });
     saveData();
+    console.log(`✅ Зарегистрирован новый пользователь: ${username} (${role})`);
     res.json({ success: true });
 });
 
@@ -73,6 +75,7 @@ app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     const user = data.users.find(u => u.username === username && u.password === password);
     if (!user) return res.status(400).json({ error: 'Неверный логин или пароль' });
+    console.log(`🔐 Вход: ${username} (${user.role})`);
     res.json({ 
         success: true, 
         user: { 
@@ -98,6 +101,11 @@ app.put('/api/profile', (req, res) => {
 app.post('/api/stats', (req, res) => {
     const { username, kills, killPercent, damagePercent, damage, videoLink, screenshot, server } = req.body;
     const user = data.users.find(u => u.username === username);
+    
+    // ВАЖНО: обычные пользователи — verified: false, админ — true
+    const isAdmin = user?.role === 'admin';
+    const verified = isAdmin ? true : false;
+    
     const newStat = {
         id: Date.now(),
         username,
@@ -109,12 +117,14 @@ app.post('/api/stats', (req, res) => {
         videoLink,
         screenshot,
         server,
-        verified: username === 'admin' ? true : false,
+        verified: verified,
         date: new Date().toISOString()
     };
     data.stats.push(newStat);
     saveData();
-    console.log(`📊 Добавлена статистика от ${username}: ${kills} убийств, ${damage} урона, verified: ${newStat.verified}`);
+    console.log(`📊 Добавлена статистика от ${username}: ${kills} убийств, ${damage} урона`);
+    console.log(`   Статус: ${verified ? '✅ ПОДТВЕРЖДЕНА (админ)' : '⏳ ОЖИДАЕТ ПРОВЕРКИ'}`);
+    console.log(`   Всего записей: ${data.stats.length}, из них неподтверждённых: ${data.stats.filter(s => !s.verified).length}`);
     res.json({ success: true, stat: newStat });
 });
 
@@ -125,7 +135,8 @@ app.get('/api/stats/my', (req, res) => {
 });
 
 app.get('/api/stats/all', (req, res) => {
-    console.log(`📋 Запрошена вся статистика: ${data.stats.length} записей`);
+    const unverifiedCount = data.stats.filter(s => !s.verified).length;
+    console.log(`📋 Запрошена вся статистика: всего ${data.stats.length}, неподтверждённых: ${unverifiedCount}`);
     res.json(data.stats);
 });
 
@@ -134,15 +145,16 @@ app.put('/api/stats/:id/verify', (req, res) => {
     if (stat) {
         stat.verified = true;
         saveData();
-        console.log(`✅ Подтверждена статистика ID ${req.params.id}`);
+        console.log(`✅ Подтверждена статистика ID ${req.params.id} (${stat.username})`);
     }
     res.json({ success: true });
 });
 
 app.delete('/api/stats/:id', (req, res) => {
+    const stat = data.stats.find(s => s.id == req.params.id);
+    if (stat) console.log(`🗑️ Удалена статистика ID ${req.params.id} (${stat.username})`);
     data.stats = data.stats.filter(s => s.id != req.params.id);
     saveData();
-    console.log(`🗑️ Удалена статистика ID ${req.params.id}`);
     res.json({ success: true });
 });
 
@@ -154,5 +166,6 @@ loadData();
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Сервер запущен на порту ${PORT}`);
     console.log(`👑 Админ: admin / admin123`);
-    console.log(`📊 Всего записей: ${data.stats.length}`);
+    const unverified = data.stats.filter(s => !s.verified).length;
+    console.log(`📊 Всего записей: ${data.stats.length}, из них ожидают проверки: ${unverified}`);
 });
