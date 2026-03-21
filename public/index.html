@@ -217,6 +217,36 @@
             border: 1px solid #ffd966;
         }
 
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .nav-tab.active {
+            color: #ffd966;
+            border-bottom: 2px solid #ffd966;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .leaderboard-header {
             display: flex;
             justify-content: space-between;
@@ -345,6 +375,77 @@
         .success { background: #4caf5022; color: #4caf50; border: 1px solid #4caf50; }
         .error { background: #f4433622; color: #f44336; border: 1px solid #f44336; }
 
+        .user-stats-section {
+            background: #1a1a1a;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid #ffd966;
+        }
+
+        .admin-panel {
+            background: #1a1a1a;
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 30px;
+            border: 1px solid #ffd966;
+        }
+
+        .verify-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        .delete-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .verified-badge {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .pending-badge {
+            color: #ff9800;
+            font-weight: bold;
+        }
+
+        .screenshot-thumb {
+            max-width: 50px;
+            max-height: 50px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .screenshot-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 3000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .screenshot-modal img {
+            max-width: 90%;
+            max-height: 90%;
+        }
+
         @media (max-width: 768px) {
             .container { padding: 15px; }
             .header-content { flex-direction: column; }
@@ -425,23 +526,63 @@
         </div>
 
         <div class="leaderboard-section">
-            <div class="leaderboard-header">
-                <h2 style="color: #ffd966;">🏆 ГЛОБАЛЬНЫЙ ТОП ИГРОКОВ</h2>
-                <div class="leaderboard-filters">
-                    <button class="filter-btn active" onclick="filterLeaderboard('kills')">По убийствам</button>
-                    <button class="filter-btn" onclick="filterLeaderboard('damage')">По урону</button>
-                    <button class="filter-btn" onclick="filterLeaderboard('avg')">По эффективности</button>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('leaderboard')">🏆 Лидерборд</button>
+                <button class="nav-tab" onclick="switchTab('mystats')">📊 Моя статистика</button>
+                <button class="nav-tab" id="adminTabBtn" style="display: none;" onclick="switchTab('admin')">🔧 Админ-панель</button>
+            </div>
+            
+            <div id="tab-leaderboard" class="tab-content active">
+                <div class="leaderboard-header">
+                    <h2 style="color: #ffd966;">🏆 ГЛОБАЛЬНЫЙ ТОП ИГРОКОВ</h2>
+                    <div class="leaderboard-filters">
+                        <button class="filter-btn active" onclick="filterLeaderboard('kills')">По убийствам</button>
+                        <button class="filter-btn" onclick="filterLeaderboard('damage')">По урону</button>
+                        <button class="filter-btn" onclick="filterLeaderboard('avg')">По эффективности</button>
+                    </div>
+                </div>
+                <div class="leaderboard-table">
+                    <table>
+                        <thead>
+                            <tr><th>#</th><th>Игрок</th><th>Убийства</th><th>Урон</th><th>Эффективность</th><th>Видео</th></tr>
+                        </thead>
+                        <tbody id="leaderboardBody">
+                            <tr><td colspan="6" style="text-align: center;">Загрузка...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div class="leaderboard-table">
-                <table id="leaderboardTable">
-                    <thead>
-                        <tr><th>#</th><th>Игрок</th><th>Убийства</th><th>Урон</th><th>Эффективность</th><th>Видео</th></tr>
-                    </thead>
-                    <tbody id="leaderboardBody">
-                        <tr><td colspan="6" style="text-align: center;">Загрузка...</td></tr>
-                    </tbody>
-                </table>
+            
+            <div id="tab-mystats" class="tab-content">
+                <div class="user-stats-section" id="userStatsSection">
+                    <h2 style="color: #ffd966;">📊 Моя статистика</h2>
+                    <div class="leaderboard-table">
+                        <table id="myStatsTable">
+                            <thead>
+                                <tr><th>Дата</th><th>Убийства</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Статус</th></tr>
+                            </thead>
+                            <tbody id="myStatsBody">
+                                <tr><td colspan="6" style="text-align: center;">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="tab-admin" class="tab-content">
+                <div class="admin-panel" id="adminPanel">
+                    <h2 style="color: #ffd966;">🔧 Админ-панель (неподтвержденная статистика)</h2>
+                    <div class="leaderboard-table">
+                        <table id="adminStatsTable">
+                            <thead>
+                                <tr><th>ID</th><th>Игрок</th><th>Убийства</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Действия</th></tr>
+                            </thead>
+                            <tbody id="adminStatsBody">
+                                <tr><td colspan="7" style="text-align: center;">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -464,6 +605,7 @@
         let leaderboardData = [];
         let currentFilter = 'kills';
         let currentImage = null;
+        let currentUserRole = 'user';
 
         function detectServer() {
             const hours = new Date().getHours();
@@ -489,12 +631,14 @@
             if (response.ok) {
                 token = data.token;
                 currentUser = data.user;
+                currentUserRole = data.user.role;
                 localStorage.setItem('token', token);
                 localStorage.setItem('user', JSON.stringify(currentUser));
                 showLoggedInUI();
                 showStatus('loginStatus', 'Вход выполнен!', 'success');
                 loadLeaderboard();
-                loadUserStats();
+                loadMyStats();
+                if (currentUserRole === 'admin') loadAdminStats();
             } else {
                 showStatus('loginStatus', data.error, 'error');
             }
@@ -530,6 +674,9 @@
             document.getElementById('uploadSection').style.display = 'none';
             document.getElementById('profileMenu').style.display = 'none';
             document.getElementById('showAuthBtn').style.display = 'block';
+            document.getElementById('userStatsSection').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('adminTabBtn').style.display = 'none';
             loadLeaderboard();
         }
 
@@ -542,6 +689,10 @@
             document.getElementById('profileDiscord').innerText = currentUser.discord || 'Не указан';
             document.getElementById('profileGameNick').innerText = currentUser.gameNick || currentUser.username;
             document.getElementById('profileAvatar').innerText = currentUser.username[0].toUpperCase();
+            
+            if (currentUser.role === 'admin') {
+                document.getElementById('adminTabBtn').style.display = 'block';
+            }
         }
 
         async function loadLeaderboard() {
@@ -597,13 +748,115 @@
             });
         }
 
-        async function loadUserStats() {
+        async function loadMyStats() {
             if (!token) return;
-            const response = await fetch(`${API_URL}/api/stats/user`, {
+            const response = await fetch(`${API_URL}/api/stats/my`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const stats = await response.json();
             document.getElementById('statsCount').innerText = stats.length;
+            
+            const tbody = document.getElementById('myStatsBody');
+            tbody.innerHTML = '';
+            
+            if (stats.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">Нет данных</td></tr>';
+                return;
+            }
+            
+            stats.forEach(stat => {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerHTML = new Date(stat.date).toLocaleDateString();
+                row.insertCell(1).innerHTML = stat.kills;
+                row.insertCell(2).innerHTML = stat.damage?.toLocaleString();
+                row.insertCell(3).innerHTML = stat.video_link ? `<a href="${stat.video_link}" target="_blank">🎥</a>` : '—';
+                row.insertCell(4).innerHTML = stat.screenshot ? `<img src="${stat.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${stat.screenshot}')">` : '—';
+                row.insertCell(5).innerHTML = stat.verified ? '<span class="verified-badge">✅ Подтверждена</span>' : '<span class="pending-badge">⏳ Ожидает</span>';
+            });
+        }
+
+        async function loadAdminStats() {
+            if (!token || currentUserRole !== 'admin') return;
+            const response = await fetch(`${API_URL}/api/stats/all`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const stats = await response.json();
+            
+            const tbody = document.getElementById('adminStatsBody');
+            tbody.innerHTML = '';
+            
+            const unverified = stats.filter(s => !s.verified);
+            if (unverified.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7">Нет неподтвержденной статистики</td></tr>';
+                return;
+            }
+            
+            unverified.forEach(stat => {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerHTML = stat.id;
+                row.insertCell(1).innerHTML = `${stat.game_nick}<br><small>${stat.username}</small>`;
+                row.insertCell(2).innerHTML = stat.kills;
+                row.insertCell(3).innerHTML = stat.damage?.toLocaleString();
+                row.insertCell(4).innerHTML = stat.video_link ? `<a href="${stat.video_link}" target="_blank">🎥</a>` : '—';
+                row.insertCell(5).innerHTML = stat.screenshot ? `<img src="${stat.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${stat.screenshot}')">` : '—';
+                
+                const actions = row.insertCell(6);
+                actions.innerHTML = `
+                    <button class="verify-btn" onclick="verifyStat(${stat.id})">✅ Подтвердить</button>
+                    <button class="delete-btn" onclick="deleteStat(${stat.id})">🗑️ Удалить</button>
+                `;
+            });
+        }
+
+        async function verifyStat(statId) {
+            if (!token || currentUserRole !== 'admin') return;
+            const response = await fetch(`${API_URL}/api/stats/${statId}/verify`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                loadAdminStats();
+                loadLeaderboard();
+            }
+        }
+
+        async function deleteStat(statId) {
+            if (!token || currentUserRole !== 'admin') return;
+            if (!confirm('Удалить эту статистику?')) return;
+            const response = await fetch(`${API_URL}/api/stats/${statId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                loadAdminStats();
+                loadLeaderboard();
+            }
+        }
+
+        function showScreenshot(src) {
+            const modal = document.createElement('div');
+            modal.className = 'screenshot-modal';
+            modal.innerHTML = `<img src="${src}">`;
+            modal.onclick = () => modal.remove();
+            document.body.appendChild(modal);
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'leaderboard') {
+                document.querySelectorAll('.nav-tab')[0].classList.add('active');
+                document.getElementById('tab-leaderboard').classList.add('active');
+            } else if (tab === 'mystats') {
+                document.querySelectorAll('.nav-tab')[1].classList.add('active');
+                document.getElementById('tab-mystats').classList.add('active');
+                loadMyStats();
+            } else if (tab === 'admin') {
+                document.getElementById('adminTabBtn').classList.add('active');
+                document.getElementById('tab-admin').classList.add('active');
+                loadAdminStats();
+            }
         }
 
         document.getElementById('fileInput').addEventListener('change', (e) => {
@@ -632,18 +885,49 @@
             
             try {
                 const { data: { text } } = await Tesseract.recognize(currentImage, 'rus+eng');
-                const numbers = text.match(/\d+/g);
                 
-                if (numbers && numbers.length >= 4) {
+                const gameNick = (currentUser.gameNick || currentUser.username).toLowerCase();
+                const lines = text.split('\n');
+                let foundData = null;
+                
+                for (let line of lines) {
+                    if (line.toLowerCase().includes(gameNick)) {
+                        const numbers = line.match(/\d+/g);
+                        if (numbers && numbers.length >= 4) {
+                            foundData = {
+                                kills: parseInt(numbers[0]),
+                                killPercent: parseFloat(numbers[1]),
+                                damagePercent: parseFloat(numbers[2]),
+                                damage: parseInt(numbers[3])
+                            };
+                            break;
+                        }
+                    }
+                }
+                
+                if (!foundData) {
+                    const numbers = text.match(/\d+/g);
+                    if (numbers && numbers.length >= 4) {
+                        foundData = {
+                            kills: parseInt(numbers[0]),
+                            killPercent: parseFloat(numbers[1]),
+                            damagePercent: parseFloat(numbers[2]),
+                            damage: parseInt(numbers[3])
+                        };
+                    }
+                }
+                
+                if (foundData) {
                     const videoLink = document.getElementById('videoLink').value;
                     const server = document.getElementById('serverInfo').innerText || 'Unknown';
                     
                     const statData = {
-                        kills: parseInt(numbers[0]),
-                        killPercent: parseFloat(numbers[1]),
-                        damagePercent: parseFloat(numbers[2]),
-                        damage: parseInt(numbers[3]),
+                        kills: foundData.kills,
+                        killPercent: foundData.killPercent,
+                        damagePercent: foundData.damagePercent,
+                        damage: foundData.damage,
                         videoLink,
+                        screenshot: currentImage,
                         server
                     };
                     
@@ -657,19 +941,21 @@
                     });
                     
                     if (response.ok) {
-                        showStatus('uploadStatus', 'Статистика отправлена!', 'success');
+                        showStatus('uploadStatus', 'Статистика отправлена на проверку!', 'success');
                         document.getElementById('videoLink').value = '';
                         currentImage = null;
                         document.getElementById('fileInput').value = '';
                         loadLeaderboard();
-                        loadUserStats();
+                        loadMyStats();
+                        if (currentUserRole === 'admin') loadAdminStats();
                     } else {
                         showStatus('uploadStatus', 'Ошибка при отправке', 'error');
                     }
                 } else {
-                    showStatus('uploadStatus', 'Не удалось распознать данные', 'error');
+                    showStatus('uploadStatus', 'Не удалось найти данные для вашего ника', 'error');
                 }
             } catch (error) {
+                console.error(error);
                 showStatus('uploadStatus', 'Ошибка анализа', 'error');
             }
         }
@@ -678,94 +964,4 @@
             currentImage = null;
             document.getElementById('fileInput').value = '';
             document.getElementById('videoLink').value = '';
-            showStatus('uploadStatus', '', '');
-        }
-
-        function switchAuthTab(tab) {
-            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-            if (tab === 'login') {
-                document.querySelectorAll('.auth-tab')[0].classList.add('active');
-                document.getElementById('loginForm').classList.add('active');
-            } else {
-                document.querySelectorAll('.auth-tab')[1].classList.add('active');
-                document.getElementById('registerForm').classList.add('active');
-            }
-        }
-
-        function filterLeaderboard(type) {
-            currentFilter = type;
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            updateLeaderboardDisplay();
-        }
-
-        function openEditModal() {
-            document.getElementById('editDiscord').value = currentUser?.discord || '';
-            document.getElementById('editGameNick').value = currentUser?.gameNick || '';
-            document.getElementById('editModal').style.display = 'flex';
-        }
-
-        function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
-
-        async function saveProfileEdit() {
-            const discord = document.getElementById('editDiscord').value;
-            const gameNick = document.getElementById('editGameNick').value;
-            
-            const response = await fetch(`${API_URL}/api/profile`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ discord, gameNick })
-            });
-            
-            if (response.ok) {
-                currentUser.discord = discord;
-                currentUser.gameNick = gameNick;
-                localStorage.setItem('user', JSON.stringify(currentUser));
-                document.getElementById('profileDiscord').innerText = discord || 'Не указан';
-                document.getElementById('profileGameNick').innerText = gameNick || currentUser.username;
-                closeEditModal();
-                showStatus('uploadStatus', 'Профиль обновлен!', 'success');
-                loadLeaderboard();
-            }
-        }
-
-        function showAuthModal() {
-            document.getElementById('authSection').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function showStatus(elementId, message, type) {
-            const el = document.getElementById(elementId);
-            if (el) {
-                el.innerHTML = `<div class="status ${type}">${message}</div>`;
-                setTimeout(() => {
-                    if (el.innerHTML === `<div class="status ${type}">${message}</div>`) {
-                        el.innerHTML = '';
-                    }
-                }, 3000);
-            }
-        }
-
-        // Initialize
-        detectServer();
-        setInterval(detectServer, 30000);
-        
-        const savedToken = localStorage.getItem('token');
-        const savedUser = localStorage.getItem('user');
-        if (savedToken && savedUser) {
-            token = savedToken;
-            currentUser = JSON.parse(savedUser);
-            showLoggedInUI();
-            loadLeaderboard();
-            loadUserStats();
-        } else {
-            loadLeaderboard();
-        }
-    </script>
-</body>
-</html>
+            show
