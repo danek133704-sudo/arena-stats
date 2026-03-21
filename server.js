@@ -3,292 +3,157 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = 'arena_stats_secret_key_2024';
 
+console.log('🚀 Запуск сервера...');
+console.log('📦 Версия Node:', process.version);
+console.log('🔧 Переменная DATABASE_URL:', process.env.DATABASE_URL ? '✅ установлена' : '❌ ОТСУТСТВУЕТ');
+
+// Проверка, что папка public существует
+const publicPath = path.join(__dirname, 'public');
+if (!fs.existsSync(publicPath)) {
+    console.error('❌ Папка public не найдена! Создаю...');
+    fs.mkdirSync(publicPath, { recursive: true });
+}
+console.log('📁 Папка public:', fs.existsSync(publicPath) ? '✅ существует' : '❌ не найдена');
+
+// Проверяем index.html
+const indexPath = path.join(publicPath, 'index.html');
+if (!fs.existsSync(indexPath)) {
+    console.error('❌ Файл index.html не найден в папке public!');
+    // Создаём простой index.html если нет
+    fs.writeFileSync(indexPath, '<!DOCTYPE html><html><head><title>Arena Stats</title></head><body><h1>Arena Stats</h1><p>Loading...</p></body></html>');
+    console.log('📄 Создан временный index.html');
+}
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
-console.log('🔧 Подключение к базе данных...');
-console.log('DATABASE_URL:', process.env.DATABASE_URL ? '✓ Установлена' : '✗ НЕ УСТАНОВЛЕНА');
+// Простая проверка подключения
+if (!process.env.DATABASE_URL) {
+    console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: DATABASE_URL не задана!');
+    process.exit(1);
+}
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
-// Функция для проверки подключения
-async function testConnection() {
-    try {
-        const client = await pool.connect();
-        console.log('✅ База данных подключена успешно');
-        client.release();
-        return true;
-    } catch (err) {
-        console.error('❌ Ошибка подключения к базе данных:', err.message);
-        return false;
-    }
-}
-
-// Создание таблиц
-async function initDb() {
-    try {
-        const client = await pool.connect();
-        
-        // Таблица пользователей
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(100) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                discord VARCHAR(100),
-                game_nick VARCHAR(100),
-                role VARCHAR(20) DEFAULT 'user',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        
-        // Таблица статистики
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS stats (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id),
-                username VARCHAR(100),
-                game_nick VARCHAR(100),
-                kills INTEGER,
-                kill_percent DECIMAL(10,2),
-                damage_percent DECIMAL(10,2),
-                damage INTEGER,
-                video_link TEXT,
-                screenshot TEXT,
-                server VARCHAR(100),
-                verified BOOLEAN DEFAULT false,
-                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        
-        // Создаем админа если нет
-        const adminCheck = await client.query('SELECT id FROM users WHERE username = $1', ['admin']);
-        if (adminCheck.rows.length === 0) {
-            const hash = await bcrypt.hash('admin123', 10);
-            await client.query(
-                'INSERT INTO users (username, password, role, game_nick) VALUES ($1, $2, $3, $4)',
-                ['admin', hash, 'admin', 'Admin']
-            );
-            console.log('✅ Админ создан: admin / admin123');
-        }
-        
-        console.log('✅ Таблицы созданы/проверены');
-        client.release();
-    } catch (err) {
-        console.error('❌ Ошибка создания таблиц:', err.message);
-    }
-}
-
-// Запускаем инициализацию после проверки подключения
-testConnection().then(connected => {
-    if (connected) {
-        initDb();
+// Тест подключения
+pool.connect((err, client, release) => {
+    if (err) {
+        console.error('❌ Ошибка подключения к базе:', err.message);
+        console.error('❌ Полная ошибка:', err);
+    } else {
+        console.log('✅ База данных подключена');
+        release();
     }
 });
 
-// Главная страница
-app.get('/', (req, res) => {
-    res.sendFile('index.html', { root: 'public' });
+// Простой маршрут для проверки
+app.get('/ping', (req, res) => {
+    res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// Регистрация
+// API маршруты
 app.post('/api/register', async (req, res) => {
     try {
         const { username, password, discord, gameNick } = req.body;
-        
-        const existing = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
-        if (existing.rows.length > 0) {
-            return res.status(400).json({ error: 'Пользователь уже существует' });
-        }
-        
         const hashedPassword = await bcrypt.hash(password, 10);
         const result = await pool.query(
-            'INSERT INTO users (username, password, discord, game_nick) VALUES ($1, $2, $3, $4) RETURNING id, username, discord, game_nick',
-            [username, hashedPassword, discord, gameNick || username]
+            'INSERT INTO users (username, password, discord, game_nick, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, username',
+            [username, hashedPassword, discord, gameNick || username, 'user']
         );
-        
-        res.json({ message: 'Регистрация успешна', user: result.rows[0] });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        res.json({ success: true, user: result.rows[0] });
+    } catch (err) {
+        console.error('Register error:', err);
+        res.status(400).json({ error: err.message });
     }
 });
 
-// Вход
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        
         const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-        if (result.rows.length === 0) {
-            return res.status(400).json({ error: 'Пользователь не найден' });
-        }
+        if (result.rows.length === 0) return res.status(400).json({ error: 'Пользователь не найден' });
         
         const user = result.rows[0];
         const valid = await bcrypt.compare(password, user.password);
-        if (!valid) {
-            return res.status(400).json({ error: 'Неверный пароль' });
-        }
+        if (!valid) return res.status(400).json({ error: 'Неверный пароль' });
         
         const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET);
-        res.json({
-            token,
-            user: {
-                id: user.id,
-                username: user.username,
-                discord: user.discord,
-                gameNick: user.game_nick,
-                role: user.role
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Ошибка сервера' });
+        res.json({ token, user: { id: user.id, username: user.username, discord: user.discord, gameNick: user.game_nick, role: user.role } });
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
-// Проверка токена
-const auth = async (req, res, next) => {
-    try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ error: 'Нет токена' });
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        res.status(401).json({ error: 'Неверный токен' });
-    }
-};
-
-// Получить профиль
-app.get('/api/profile', auth, async (req, res) => {
-    try {
-        const result = await pool.query('SELECT id, username, discord, game_nick, role FROM users WHERE id = $1', [req.user.id]);
-        res.json(result.rows[0]);
-    } catch (error) {
-        res.status(500).json({ error: 'Ошибка' });
-    }
-});
-
-// Обновить профиль
-app.put('/api/profile', auth, async (req, res) => {
-    try {
-        const { discord, gameNick } = req.body;
-        await pool.query('UPDATE users SET discord = $1, game_nick = $2 WHERE id = $3', [discord, gameNick, req.user.id]);
-        res.json({ message: 'Профиль обновлен' });
-    } catch (error) {
-        res.status(500).json({ error: 'Ошибка' });
-    }
-});
-
-// Добавить статистику
-app.post('/api/stats', auth, async (req, res) => {
-    try {
-        const { kills, killPercent, damagePercent, damage, videoLink, screenshot, server } = req.body;
-        
-        const userResult = await pool.query('SELECT username, game_nick FROM users WHERE id = $1', [req.user.id]);
-        const user = userResult.rows[0];
-        
-        await pool.query(
-            `INSERT INTO stats (user_id, username, game_nick, kills, kill_percent, damage_percent, damage, video_link, screenshot, server)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-            [req.user.id, user.username, user.game_nick, kills, killPercent, damagePercent, damage, videoLink, screenshot, server]
-        );
-        
-        res.json({ message: 'Статистика добавлена' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Ошибка' });
-    }
-});
-
-// Получить свою статистику
-app.get('/api/stats/my', auth, async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM stats WHERE user_id = $1 ORDER BY date DESC', [req.user.id]);
-        res.json(result.rows);
-    } catch (error) {
-        res.status(500).json({ error: 'Ошибка' });
-    }
-});
-
-// Получить всю статистику (админ)
-app.get('/api/stats/all', auth, async (req, res) => {
-    try {
-        const userResult = await pool.query('SELECT role FROM users WHERE id = $1', [req.user.id]);
-        if (userResult.rows[0]?.role !== 'admin') {
-            return res.status(403).json({ error: 'Нет прав' });
-        }
-        const result = await pool.query('SELECT * FROM stats ORDER BY date DESC');
-        res.json(result.rows);
-    } catch (error) {
-        res.status(500).json({ error: 'Ошибка' });
-    }
-});
-
-// Подтвердить статистику (админ)
-app.put('/api/stats/:id/verify', auth, async (req, res) => {
-    try {
-        const userResult = await pool.query('SELECT role FROM users WHERE id = $1', [req.user.id]);
-        if (userResult.rows[0]?.role !== 'admin') {
-            return res.status(403).json({ error: 'Нет прав' });
-        }
-        await pool.query('UPDATE stats SET verified = true WHERE id = $1', [req.params.id]);
-        res.json({ message: 'Подтверждено' });
-    } catch (error) {
-        res.status(500).json({ error: 'Ошибка' });
-    }
-});
-
-// Удалить статистику (админ)
-app.delete('/api/stats/:id', auth, async (req, res) => {
-    try {
-        const userResult = await pool.query('SELECT role FROM users WHERE id = $1', [req.user.id]);
-        if (userResult.rows[0]?.role !== 'admin') {
-            return res.status(403).json({ error: 'Нет прав' });
-        }
-        await pool.query('DELETE FROM stats WHERE id = $1', [req.params.id]);
-        res.json({ message: 'Удалено' });
-    } catch (error) {
-        res.status(500).json({ error: 'Ошибка' });
-    }
-});
-
-// Лидерборд
 app.get('/api/leaderboard', async (req, res) => {
     try {
-        const result = await pool.query(`
-            SELECT 
-                user_id as id,
-                username,
-                game_nick,
-                SUM(kills) as total_kills,
-                SUM(damage) as total_damage,
-                COUNT(*) as stats_count,
-                MAX(date) as last_activity
-            FROM stats
-            WHERE verified = true
-            GROUP BY user_id, username, game_nick
-            ORDER BY total_kills DESC
-            LIMIT 50
-        `);
+        const result = await pool.query('SELECT username, game_nick, SUM(kills) as kills FROM stats WHERE verified = true GROUP BY username, game_nick ORDER BY kills DESC LIMIT 10');
         res.json(result.rows);
-    } catch (error) {
-        console.error(error);
+    } catch (err) {
+        console.error('Leaderboard error:', err);
         res.json([]);
     }
 });
 
-// Запуск сервера
-app.listen(PORT, () => {
-    console.log(`🚀 Сервер запущен на порту ${PORT}`);
-    console.log(`📱 Сайт доступен: http://localhost:${PORT}`);
+// ГЛАВНОЕ: простой ответ на корень
+app.get('/', (req, res) => {
+    res.sendFile(path.join(publicPath, 'index.html'));
+});
+
+// Создание таблиц
+async function initDb() {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE,
+                password TEXT,
+                discord TEXT,
+                game_nick TEXT,
+                role TEXT DEFAULT 'user'
+            )
+        `);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS stats (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER,
+                username TEXT,
+                game_nick TEXT,
+                kills INTEGER,
+                damage INTEGER,
+                verified BOOLEAN DEFAULT false
+            )
+        `);
+        
+        // Создаём админа
+        const adminCheck = await pool.query('SELECT * FROM users WHERE username = $1', ['admin']);
+        if (adminCheck.rows.length === 0) {
+            const hash = await bcrypt.hash('admin123', 10);
+            await pool.query('INSERT INTO users (username, password, role, game_nick) VALUES ($1, $2, $3, $4)', ['admin', hash, 'admin', 'Admin']);
+            console.log('✅ Админ создан: admin / admin123');
+        }
+        console.log('✅ Таблицы готовы');
+    } catch (err) {
+        console.error('❌ Ошибка инициализации:', err.message);
+    }
+}
+
+initDb();
+
+// ЗАПУСК
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Сервер запущен на порту ${PORT}`);
+    console.log(`🌐 Сайт доступен: http://localhost:${PORT}`);
+    console.log(`🔑 Админ: admin / admin123`);
 });
