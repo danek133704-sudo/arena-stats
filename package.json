@@ -1,7 +1,6 @@
 {
   "name": "arena-stats",
   "version": "1.0.0",
-  "description": "Arena Stats Tracker with Leaderboard",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
