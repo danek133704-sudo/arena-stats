@@ -58,8 +58,6 @@
         .ocr-highlight { background: #ffaa3310; border-left: 3px solid #ffaa33; padding: 12px; border-radius: 20px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .manual-section { background: #1a1a1a; border-radius: 24px; padding: 20px; margin-top: 20px; border: 1px solid #ffaa3350; }
         .send-btn { background: #ffaa33; color: #111; font-weight: bold; margin-top: 10px; width: 100%; padding: 12px; }
-        .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #ffaa33; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 10px; vertical-align: middle; }
-        @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 700px) { .navbar { flex-direction: column; text-align: center; } .manual-input-row { flex-direction: column; } }
     </style>
 </head>
@@ -77,7 +75,7 @@
                 <div id="profileDropdown" class="profile-dropdown" style="display: none;">
                     <div><strong>Игровой ник для распознавания:</strong></div>
                     <input type="text" id="localGameNick" placeholder="Твой ник как на скрине" style="margin: 10px 0; width: 100%;">
-                    <button onclick="saveLocalNick()" style="margin-top: 5px;">💾 Сохранить ник локально</button>
+                    <button onclick="saveLocalNick()" style="margin-top: 5px;">💾 Сохранить ник</button>
                     <div style="margin-top: 10px; font-size: 12px; color: #ffaa33;">Текущий: <span id="currentLocalNick">—</span></div>
                     <button onclick="logout()" class="btn-outline" style="margin-top: 10px; width: 100%;">🚪 Выйти</button>
                 </div>
@@ -123,7 +121,7 @@
             <button class="btn-outline" onclick="retryOCR()" style="padding: 4px 12px;">🔄 Заново</button>
         </div>
         
-        <button id="sendRecognizedBtn" class="send-btn" style="display: none;" onclick="sendRecognizedStats()">📤 Отправить распознанную статистику</button>
+        <button id="sendRecognizedBtn" class="send-btn" style="display: none;" onclick="sendRecognizedStats()">📤 Отправить</button>
         
         <div class="manual-section">
             <h3 style="margin-bottom: 15px;">✍️ РУЧНОЙ ВВОД</h3>
@@ -169,7 +167,7 @@
     let ocrWorker = null;
     let localNick = localStorage.getItem('arena_local_nick') || '';
 
-    // ========== ПРЕДОБРАБОТКА ИЗОБРАЖЕНИЯ ==========
+    // Предобработка изображения
     function preprocessImage(base64) {
         return new Promise((resolve) => {
             const img = new Image();
@@ -179,25 +177,15 @@
                 canvas.height = img.height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
-                
-                // Получаем пиксели
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const data = imageData.data;
-                
-                // Увеличиваем контраст и делаем ч/б
                 for (let i = 0; i < data.length; i += 4) {
-                    const r = data[i];
-                    const g = data[i+1];
-                    const b = data[i+2];
-                    const brightness = (r + g + b) / 3;
-                    // Усиливаем контраст: тёмные делаем чёрными, светлые белыми
-                    const threshold = 140;
-                    const value = brightness > threshold ? 255 : 0;
+                    const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+                    const value = brightness > 130 ? 255 : 0;
                     data[i] = value;
                     data[i+1] = value;
                     data[i+2] = value;
                 }
-                
                 ctx.putImageData(imageData, 0, 0);
                 resolve(canvas.toDataURL('image/png'));
             };
@@ -225,7 +213,6 @@
         if (div) { div.innerHTML = `<div class="status ${type}">${msg}</div>`; setTimeout(() => div.innerHTML = '', 3500); }
     }
 
-    // ========== ЛОКАЛЬНОЕ СОХРАНЕНИЕ НИКА ==========
     function saveLocalNick() {
         const newNick = document.getElementById('localGameNick').value.trim();
         if (!newNick) { alert('Введите ник'); return; }
@@ -234,7 +221,7 @@
         document.getElementById('currentLocalNick').innerText = localNick;
         document.getElementById('localGameNick').value = '';
         document.getElementById('profileDropdown').style.display = 'none';
-        showStatus('uploadStatus', '✅ Ник сохранён локально!', 'success');
+        showStatus('uploadStatus', '✅ Ник сохранён!', 'success');
         recognizedStats = null;
         document.getElementById('ocrResult').style.display = 'none';
         document.getElementById('sendRecognizedBtn').style.display = 'none';
@@ -294,6 +281,7 @@
     }
     function renderLeaderboard(data) {
         const tbody = document.getElementById('leaderboardBody');
+        if (!tbody) return;
         tbody.innerHTML = '';
         if (!data.length) { tbody.innerHTML = '<td colspan="5">Нет данных<\/td>'; return; }
         data.slice(0, 50).forEach((p, idx) => {
@@ -315,10 +303,11 @@
         const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } });
         const stats = await res.json();
         const tbody = document.getElementById('myStatsBody');
+        if (!tbody) return;
         tbody.innerHTML = '';
         if (!stats.length) { tbody.innerHTML = '<td colspan="10">Нет данных<\/td>'; return; }
         stats.forEach(s => {
-            tbody.innerHTML += `}。}<td>${new Date(s.date).toLocaleDateString()}<\/td> <td><strong>${s.game_nick}<\/strong><\/td> <td>${s.kills}<\/td> <td>${s.kill_percent||0}%<\/td> <td>${s.hs_percent||0}%<\/td> <td>${s.damage?.toLocaleString()}<\/td> <td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}<\/td> <td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}<\/td> <td>${s.verified ? '✅' : '⏳'}<\/td> <td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—'}<\/td><\/tr>`;
+            tbody.innerHTML += `<tr>}<td>${new Date(s.date).toLocaleDateString()}<\/td><td><strong>${s.game_nick}<\/strong><\/td><td>${s.kills}<\/td><td>${s.kill_percent||0}%<\/td><td>${s.hs_percent||0}%<\/td><td>${s.damage?.toLocaleString()}<\/td><td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}<\/td><td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}<\/td><td>${s.verified ? '✅' : '⏳'}<\/td><td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—'}<\/td><\/tr>`;
         });
     }
     async function deleteMyStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadMyStats(); loadLeaderboard(); showStatus('uploadStatus', '✅ Удалено', 'success'); }
@@ -328,6 +317,7 @@
         const allStats = await res.json();
         const unverified = allStats.filter(s => !s.verified);
         const container = document.getElementById('adminList');
+        if (!container) return;
         container.innerHTML = '';
         if (!unverified.length) { container.innerHTML = '<div style="padding: 2rem;">✅ Нет ожидающих</div>'; return; }
         unverified.forEach(s => {
@@ -338,7 +328,7 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НЕЙРОНКА С ПРЕДОБРАБОТКОЙ ==========
+    // ========== НЕЙРОНКА ==========
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
@@ -357,12 +347,11 @@
             showStatus('uploadStatus', '✅ Нейронка готова!', 'success');
         }
         
-        showStatus('uploadStatus', '🔍 Предобработка изображения...', 'success');
+        showStatus('uploadStatus', '🔍 Предобработка...', 'success');
         const processedImage = await preprocessImage(currentImageData);
         
-        showStatus('uploadStatus', '🔍 Распознавание текста...', 'success');
+        showStatus('uploadStatus', '🔍 Распознавание...', 'success');
         const { data: { text } } = await ocrWorker.recognize(processedImage);
-        
         const lines = text.split('\n');
         for (let line of lines) {
             if (line.toLowerCase().includes(nickToFind.toLowerCase())) {
@@ -394,25 +383,35 @@
             const r = new FileReader();
             r.onload = async (ev) => {
                 currentImageData = ev.target.result;
-                const imgElement = `<img src="${currentImageData}" class="clickable-image" style="max-width:100%; max-height:240px; border-radius: 24px; margin-top:12px; border:1px solid #ffaa33;" onclick="showFullscreenImage('${currentImageData}')">`;
-                document.getElementById('previewImg').innerHTML = imgElement;
+                const previewDiv = document.getElementById('previewImg');
+                if (previewDiv) {
+                    previewDiv.innerHTML = `<img src="${currentImageData}" class="clickable-image" style="max-width:100%; max-height:240px; border-radius: 24px; margin-top:12px; border:1px solid #ffaa33;" onclick="showFullscreenImage('${currentImageData}')">`;
+                }
                 const nick = getCurrentNick();
                 if (!nick) {
-                    document.getElementById('ocrText').innerHTML = `⚠️ Сначала укажи свой ник в профиле (кнопка "Профиль")`;
-                    document.getElementById('ocrResult').style.display = 'flex';
+                    const ocrDiv = document.getElementById('ocrText');
+                    if (ocrDiv) ocrDiv.innerHTML = `⚠️ Сначала укажи свой ник в профиле (кнопка "Профиль")`;
+                    const ocrResultDiv = document.getElementById('ocrResult');
+                    if (ocrResultDiv) ocrResultDiv.style.display = 'flex';
                     return;
                 }
                 const stats = await findMyStatsInScreenshot();
                 if (stats) {
                     recognizedStats = stats;
-                    document.getElementById('ocrText').innerHTML = `✅ Найдено! Убийства: ${stats.kills} | % убийств: ${stats.killPercent}% | HS%: ${stats.hsPercent}% | Урон: ${stats.damage.toLocaleString()}`;
-                    document.getElementById('ocrResult').style.display = 'flex';
-                    document.getElementById('sendRecognizedBtn').style.display = 'block';
+                    const ocrTextSpan = document.getElementById('ocrText');
+                    if (ocrTextSpan) ocrTextSpan.innerHTML = `✅ Найдено! Убийства: ${stats.kills} | % убийств: ${stats.killPercent}% | HS%: ${stats.hsPercent}% | Урон: ${stats.damage.toLocaleString()}`;
+                    const ocrResultDiv = document.getElementById('ocrResult');
+                    if (ocrResultDiv) ocrResultDiv.style.display = 'flex';
+                    const sendBtn = document.getElementById('sendRecognizedBtn');
+                    if (sendBtn) sendBtn.style.display = 'block';
                     showStatus('uploadStatus', '✅ Нажмите "Отправить"', 'success');
                 } else {
-                    document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${nick}" в таблице. Попробуй ручной ввод.`;
-                    document.getElementById('ocrResult').style.display = 'flex';
-                    document.getElementById('sendRecognizedBtn').style.display = 'none';
+                    const ocrTextSpan = document.getElementById('ocrText');
+                    if (ocrTextSpan) ocrTextSpan.innerHTML = `❌ Не найден ник "${nick}" в таблице. Попробуй ручной ввод.`;
+                    const ocrResultDiv = document.getElementById('ocrResult');
+                    if (ocrResultDiv) ocrResultDiv.style.display = 'flex';
+                    const sendBtn = document.getElementById('sendRecognizedBtn');
+                    if (sendBtn) sendBtn.style.display = 'none';
                     recognizedStats = null;
                 }
             };
@@ -425,14 +424,19 @@
         const stats = await findMyStatsInScreenshot();
         if (stats) {
             recognizedStats = stats;
-            document.getElementById('ocrText').innerHTML = `✅ Найдено! Убийства: ${stats.kills} | % убийств: ${stats.killPercent}% | HS%: ${stats.hsPercent}% | Урон: ${stats.damage.toLocaleString()}`;
-            document.getElementById('ocrResult').style.display = 'flex';
-            document.getElementById('sendRecognizedBtn').style.display = 'block';
+            const ocrTextSpan = document.getElementById('ocrText');
+            if (ocrTextSpan) ocrTextSpan.innerHTML = `✅ Найдено! Убийства: ${stats.kills} | % убийств: ${stats.killPercent}% | HS%: ${stats.hsPercent}% | Урон: ${stats.damage.toLocaleString()}`;
+            const ocrResultDiv = document.getElementById('ocrResult');
+            if (ocrResultDiv) ocrResultDiv.style.display = 'flex';
+            const sendBtn = document.getElementById('sendRecognizedBtn');
+            if (sendBtn) sendBtn.style.display = 'block';
             showStatus('uploadStatus', '✅ Готово!', 'success');
         } else {
-            document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${getCurrentNick()}" в таблице.`;
+            const ocrTextSpan = document.getElementById('ocrText');
+            if (ocrTextSpan) ocrTextSpan.innerHTML = `❌ Не найден ник "${getCurrentNick()}" в таблице.`;
             recognizedStats = null;
-            document.getElementById('sendRecognizedBtn').style.display = 'none';
+            const sendBtn = document.getElementById('sendRecognizedBtn');
+            if (sendBtn) sendBtn.style.display = 'none';
         }
     }
 
@@ -454,11 +458,16 @@
             if (res.ok) {
                 showStatus('uploadStatus', '✅ Статистика отправлена!', 'success');
                 recognizedStats = null;
-                document.getElementById('ocrResult').style.display = 'none';
-                document.getElementById('sendRecognizedBtn').style.display = 'none';
-                document.getElementById('videoLink').value = '';
-                document.getElementById('fileInput').value = '';
-                document.getElementById('previewImg').innerHTML = '';
+                const ocrResultDiv = document.getElementById('ocrResult');
+                if (ocrResultDiv) ocrResultDiv.style.display = 'none';
+                const sendBtn = document.getElementById('sendRecognizedBtn');
+                if (sendBtn) sendBtn.style.display = 'none';
+                const videoLinkInput = document.getElementById('videoLink');
+                if (videoLinkInput) videoLinkInput.value = '';
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) fileInput.value = '';
+                const previewDiv = document.getElementById('previewImg');
+                if (previewDiv) previewDiv.innerHTML = '';
                 currentImageData = null;
                 loadMyStats(); if (currentUser.role === 'admin') loadAdminStats(); loadLeaderboard();
             } else showStatus('uploadStatus', '❌ Ошибка', 'error');
@@ -492,13 +501,22 @@
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
-        document.getElementById('authModal').style.display = 'none';
-        document.getElementById('uploadPanel').style.display = 'block';
-        document.getElementById('showAuthBtn').style.display = 'none';
-        document.getElementById('userInfo').style.display = 'inline-block';
-        document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
-        document.getElementById('currentLocalNick').innerText = localNick || currentUser.gameNick || currentUser.username;
-        if (currentUser.role === 'admin') document.getElementById('adminTabBtn').style.display = 'inline-block';
+        const authModal = document.getElementById('authModal');
+        if (authModal) authModal.style.display = 'none';
+        const uploadPanel = document.getElementById('uploadPanel');
+        if (uploadPanel) uploadPanel.style.display = 'block';
+        const showAuthBtn = document.getElementById('showAuthBtn');
+        if (showAuthBtn) showAuthBtn.style.display = 'none';
+        const userInfoDiv = document.getElementById('userInfo');
+        if (userInfoDiv) userInfoDiv.style.display = 'inline-block';
+        const userNameSpan = document.getElementById('userNameDisplay');
+        if (userNameSpan) userNameSpan.innerHTML = `👤 ${currentUser.username}`;
+        const currentNickSpan = document.getElementById('currentLocalNick');
+        if (currentNickSpan) currentNickSpan.innerText = localNick || currentUser.gameNick || currentUser.username;
+        if (currentUser.role === 'admin') {
+            const adminTab = document.getElementById('adminTabBtn');
+            if (adminTab) adminTab.style.display = 'inline-block';
+        }
         loadLeaderboard(); loadMyStats(); if (currentUser.role === 'admin') loadAdminStats();
     } else loadLeaderboard();
 </script>
