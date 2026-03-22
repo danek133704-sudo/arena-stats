@@ -18,12 +18,6 @@
             min-height: 100vh;
         }
 
-        .glass {
-            background: rgba(20, 20, 30, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 200, 100, 0.2);
-        }
-
         .navbar {
             display: flex;
             justify-content: space-between;
@@ -132,6 +126,18 @@
             border-color: #ffaa33;
             outline: none;
             box-shadow: 0 0 8px #ffaa33;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .search-box input {
+            flex: 1;
+            margin: 0;
         }
 
         .tabs {
@@ -326,7 +332,6 @@
                 <input type="text" id="regUsername" placeholder="Логин">
                 <input type="password" id="regPassword" placeholder="Пароль">
                 <input type="text" id="regGameNick" placeholder="Ник в игре (как на скрине)">
-                <input type="text" id="regDiscord" placeholder="Discord">
                 <button onclick="register()">Зарегистрироваться</button>
                 <div id="regStatus" class="status"></div>
             </div>
@@ -351,16 +356,21 @@
 
     <div class="card">
         <div class="tabs">
-            <div class="tab active" onclick="switchMain('leaderboard')">🏆 ЛИДЕРБОРД</div>
+            <div class="tab active" onclick="switchMain('leaderboard')">🏆 СПИСОК ЛИДЕРОВ</div>
             <div class="tab" onclick="switchMain('mystats')">📋 МОЯ СТАТИСТИКА</div>
             <div class="tab" id="adminTabBtn" style="display: none;" onclick="switchMain('admin')">🔧 АДМИН-ПАНЕЛЬ</div>
         </div>
 
         <div id="leaderboardPanel" class="tab-content active">
+            <div class="search-box">
+                <input type="text" id="searchPlayerInput" placeholder="🔍 Поиск игрока по нику...">
+                <button onclick="filterLeaderboard()">🔎 Найти</button>
+                <button onclick="resetLeaderboard()" class="btn-outline">❌ Сброс</button>
+            </div>
             <table id="leaderboardTable">
                 <thead> <th>#</th><th>Игрок</th><th>Убийства</th><th>Урон</th><th>Видео</th> </thead>
                 <tbody id="leaderboardBody"><td colspan="5">Загрузка...</td></tbody>
-            </table>
+             </table>
         </div>
 
         <div id="mystatsPanel" class="tab-content">
@@ -390,6 +400,7 @@
 <script>
     let currentUser = null;
     let currentImageData = null;
+    let allLeaderboardData = [];
 
     async function compressImage(base64, maxWidth=800, quality=0.6) {
         return new Promise((resolve) => {
@@ -407,12 +418,9 @@
     }
 
     function extractNumbers(text) {
-        // ищем все числа, фильтруем пустые
-        let numbers = [];
         const matches = text.match(/\d+/g);
         if (!matches) return [];
-        numbers = matches.map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0);
-        return numbers;
+        return matches.map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0);
     }
 
     function showStatus(elId, msg, type) {
@@ -425,8 +433,7 @@
         const payload = {
             username: document.getElementById('regUsername').value,
             password: document.getElementById('regPassword').value,
-            gameNick: document.getElementById('regGameNick').value,
-            discord: document.getElementById('regDiscord').value
+            gameNick: document.getElementById('regGameNick').value
         };
         const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await res.json();
@@ -498,10 +505,14 @@
         }
     }
 
-    // ========== ЛИДЕРБОРД ==========
+    // ========== ЛИДЕРБОРД С ПОИСКОМ ==========
     async function loadLeaderboard() {
         const res = await fetch('/api/leaderboard');
-        const data = await res.json();
+        allLeaderboardData = await res.json();
+        renderLeaderboard(allLeaderboardData);
+    }
+
+    function renderLeaderboard(data) {
         const tbody = document.getElementById('leaderboardBody');
         tbody.innerHTML = '';
         if (!data.length) { tbody.innerHTML = '<td colspan="5">Нет данных</td>'; return; }
@@ -510,10 +521,29 @@
             if (idx === 0) cls = 'rank-1';
             if (idx === 1) cls = 'rank-2';
             if (idx === 2) cls = 'rank-3';
-            tbody.innerHTML += `<tr class="${cls}"><td><b>${idx+1}</b></td><td><b>${p.gameNick || p.username}</b><br><small>${p.username}</small></td><td>${p.kills}</td><td>${p.damage?.toLocaleString()}</td><td>${p.videoLink ? `<a href="${p.videoLink}" target="_blank">🎥</a>` : '—'}</td></tr>`;
+            tbody.innerHTML += `<tr class="${cls}"><td><b>${idx+1}</b></td><td><b>${p.game_nick || p.username}</b><br><small>${p.username}</small></td><td>${p.kills}</td><td>${p.damage?.toLocaleString()}</td><td>${p.video_link ? `<a href="${p.video_link}" target="_blank">🎥</a>` : '—'}</td></tr>`;
         });
     }
 
+    function filterLeaderboard() {
+        const searchTerm = document.getElementById('searchPlayerInput').value.toLowerCase().trim();
+        if (!searchTerm) {
+            renderLeaderboard(allLeaderboardData);
+            return;
+        }
+        const filtered = allLeaderboardData.filter(p => 
+            (p.game_nick?.toLowerCase().includes(searchTerm)) || 
+            (p.username?.toLowerCase().includes(searchTerm))
+        );
+        renderLeaderboard(filtered);
+    }
+
+    function resetLeaderboard() {
+        document.getElementById('searchPlayerInput').value = '';
+        renderLeaderboard(allLeaderboardData);
+    }
+
+    // ========== СТАТИСТИКА ==========
     async function loadMyStats() {
         if (!currentUser) return;
         const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } });
@@ -522,7 +552,7 @@
         tbody.innerHTML = '';
         if (!stats.length) { tbody.innerHTML = '<td colspan="9">Нет данных</td>'; return; }
         stats.forEach(s => {
-            tbody.innerHTML += `<tr><td>${new Date(s.date).toLocaleDateString()}</td><td>${s.gameNick}</td><td>${s.kills}</td><td>${s.killPercent||0}%</td><td>${s.hsPercent||0}%</td><td>${s.damage?.toLocaleString()}</td><td>${s.videoLink ? `<a href="${s.videoLink}" target="_blank">🎥</a>` : '—'}</td><td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}</td><td>${s.verified ? '✅' : '⏳'}</td></tr>`;
+            tbody.innerHTML += `<tr><td>${new Date(s.date).toLocaleDateString()}</td><td>${s.game_nick}</td><td>${s.kills}</td><td>${s.kill_percent||0}%</td><td>${s.hs_percent||0}%</td><td>${s.damage?.toLocaleString()}</td><td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}</td><td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}</td><td>${s.verified ? '✅' : '⏳'}</td></tr>`;
         });
     }
 
@@ -537,12 +567,12 @@
         unverified.forEach(s => {
             container.innerHTML += `
                 <div class="stat-card">
-                    <div><b>${s.gameNick || s.username}</b> <small>(${s.username})</small></div>
+                    <div><b>${s.game_nick || s.username}</b> <small>(${s.username})</small></div>
                     <div>💀 ${s.kills}</div>
-                    <div>🎯 ${s.killPercent||0}%</div>
-                    <div>💥 HS ${s.hsPercent||0}%</div>
+                    <div>🎯 ${s.kill_percent||0}%</div>
+                    <div>💥 HS ${s.hs_percent||0}%</div>
                     <div>⚡ ${s.damage?.toLocaleString()}</div>
-                    <div>${s.videoLink ? `<a href="${s.videoLink}" target="_blank">🎥</a>` : '—'}</div>
+                    <div>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}</div>
                     <div>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}</div>
                     <div><button class="verify" onclick="verifyStat(${s.id})">✅ Принять</button><button class="delete" onclick="deleteStat(${s.id})">🗑️ Отклонить</button></div>
                 </div>
@@ -554,7 +584,7 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div style="cursor:pointer; text-align:center"><img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;"></div>`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НЕЙРОНКА УЛУЧШЕННАЯ ==========
+    // ========== НЕЙРОНКА ==========
     document.getElementById('fileInput').onchange = (e) => {
         const f = e.target.files[0];
         if (f) {
@@ -567,7 +597,7 @@
     async function submitStats() {
         if (!currentUser) { alert('Войдите в аккаунт'); return; }
         if (!currentImageData) { alert('Сначала выберите скриншот'); return; }
-        showStatus('uploadStatus', '🔍 Распознавание (улучшенная нейронка)...', 'success');
+        showStatus('uploadStatus', '🔍 Распознавание...', 'success');
         try {
             const { data: { text } } = await Tesseract.recognize(currentImageData, 'rus+eng');
             const rawNumbers = extractNumbers(text);
