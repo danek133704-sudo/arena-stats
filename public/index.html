@@ -18,14 +18,12 @@
             min-height: 100vh;
         }
 
-        /* Глассморфизм */
         .glass {
             background: rgba(20, 20, 30, 0.6);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 200, 100, 0.2);
         }
 
-        /* Хедер */
         .navbar {
             display: flex;
             justify-content: space-between;
@@ -98,7 +96,6 @@
             padding: 0 1.5rem;
         }
 
-        /* карточки */
         .card {
             background: #111111cc;
             border-radius: 32px;
@@ -118,6 +115,7 @@
         }
         .upload-area:hover {
             background: #ffaa3310;
+            border-color: #ffcc66;
         }
 
         input, textarea {
@@ -128,6 +126,12 @@
             padding: 12px 18px;
             color: #ffdd99;
             margin: 10px 0;
+            transition: 0.2s;
+        }
+        input:focus {
+            border-color: #ffaa33;
+            outline: none;
+            box-shadow: 0 0 8px #ffaa33;
         }
 
         .tabs {
@@ -143,25 +147,30 @@
             cursor: pointer;
             background: #1a1a1a;
             color: #aaa;
-            transition: 0.2s;
+            transition: all 0.2s ease;
         }
         .tab.active {
             background: #ffaa33;
             color: #0a0a0a;
             font-weight: bold;
+            box-shadow: 0 0 8px #ffaa33;
+        }
+        .tab:hover {
+            background: #ffaa3322;
+            color: #ffcc66;
         }
 
         .tab-content {
             display: none;
+            animation: fadeIn 0.3s ease-out;
         }
         .tab-content.active {
             display: block;
-            animation: fade 0.3s;
         }
 
-        @keyframes fade {
-            from { opacity: 0; transform: translateY(6px);}
-            to { opacity: 1; transform: translateY(0);}
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         table {
@@ -172,9 +181,13 @@
             padding: 14px 8px;
             border-bottom: 1px solid #ffaa3320;
             text-align: left;
+            transition: background 0.2s;
         }
         th {
             color: #ffcc66;
+        }
+        tr:hover td {
+            background: #ffaa3310;
         }
         .rank-1 { background: #ffaa3310; border-left: 4px solid gold; }
         .rank-2 { background: #c0c0c010; border-left: 4px solid silver; }
@@ -191,6 +204,12 @@
             justify-content: space-between;
             align-items: center;
             gap: 12px;
+            transition: all 0.2s;
+        }
+        .stat-card:hover {
+            background: #1a1a1a;
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(255, 170, 51, 0.2);
         }
 
         .verify, .delete {
@@ -198,18 +217,24 @@
             border-radius: 32px;
             font-weight: bold;
             cursor: pointer;
+            transition: 0.2s;
         }
         .verify { background: #2e7d32; color: white; border: none; }
+        .verify:hover { background: #1b5e20; transform: scale(0.96); }
         .delete { background: #c62828; color: white; border: none; margin-left: 6px; }
+        .delete:hover { background: #b71c1c; transform: scale(0.96); }
 
         .screenshot-thumb {
             width: 48px;
             border-radius: 12px;
             cursor: pointer;
+            transition: 0.2s;
         }
-        .profile-menu {
-            position: relative;
+        .screenshot-thumb:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 8px #ffaa33;
         }
+        .profile-menu { position: relative; display: inline-block; }
         .profile-dropdown {
             position: absolute;
             right: 0;
@@ -220,6 +245,7 @@
             padding: 1rem;
             width: 240px;
             z-index: 200;
+            backdrop-filter: blur(8px);
         }
         .status {
             padding: 10px;
@@ -247,6 +273,13 @@
             max-width: 420px;
             width: 90%;
             border: 1px solid #ffaa33;
+        }
+        .ocr-highlight {
+            background: #ffaa3310;
+            border-left: 3px solid #ffaa33;
+            padding: 12px;
+            border-radius: 20px;
+            margin-top: 12px;
         }
         @media (max-width: 700px) {
             .navbar { flex-direction: column; gap: 12px; }
@@ -277,7 +310,6 @@
 </div>
 
 <div class="container">
-    <!-- Модалка авторизации -->
     <div id="authModal" class="modal" style="display: none;">
         <div class="modal-card">
             <div class="tabs" style="border: none; justify-content: center;">
@@ -301,7 +333,6 @@
         </div>
     </div>
 
-    <!-- Панель загрузки статистики -->
     <div id="uploadPanel" class="card" style="display: none;">
         <h2 style="margin-bottom: 16px;">📸 Загрузить скриншот</h2>
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
@@ -311,14 +342,13 @@
         </div>
         <div id="previewImg" style="text-align: center;"></div>
         <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео (YouTube/Twitch)">
-        <div id="ocrResult" style="background: #1e1e1e; border-radius: 24px; padding: 14px; margin-top: 12px; display: none;">
-            <b>📊 Распознано:</b> <span id="ocrText"></span>
+        <div id="ocrResult" class="ocr-highlight" style="display: none;">
+            <b>🔍 Распознано:</b> <span id="ocrText"></span>
         </div>
         <button onclick="submitStats()" style="margin-top: 14px;">📤 Отправить статистику</button>
         <div id="uploadStatus" class="status"></div>
     </div>
 
-    <!-- Вкладки -->
     <div class="card">
         <div class="tabs">
             <div class="tab active" onclick="switchMain('leaderboard')">🏆 ЛИДЕРБОРД</div>
@@ -328,15 +358,15 @@
 
         <div id="leaderboardPanel" class="tab-content active">
             <table id="leaderboardTable">
-                <thead><tr><th>#</th><th>Игрок</th><th>Убийства</th><th>Урон</th><th>Видео</th></tr></thead>
-                <tbody id="leaderboardBody"><tr><td colspan="5">Загрузка...</td></tr></tbody>
+                <thead> <th>#</th><th>Игрок</th><th>Убийства</th><th>Урон</th><th>Видео</th> </thead>
+                <tbody id="leaderboardBody"><td colspan="5">Загрузка...</td></tbody>
             </table>
         </div>
 
         <div id="mystatsPanel" class="tab-content">
             <table id="myStatsTable">
-                <thead><tr><th>Дата</th><th>Ник</th><th>Убийства</th><th>%</th><th>HS%</th><th>Урон</th><th>Видео</th><th>Скрин</th><th>Статус</th></tr></thead>
-                <tbody id="myStatsBody"><tr><td colspan="9">Нет данных</td></tr></tbody>
+                <thead> <th>Дата</th><th>Ник</th><th>Убийства</th><th>%</th><th>HS%</th><th>Урон</th><th>Видео</th><th>Скрин</th><th>Статус</th> </thead>
+                <tbody id="myStatsBody"><td colspan="9">Нет данных</td></tbody>
             </table>
         </div>
 
@@ -346,7 +376,6 @@
     </div>
 </div>
 
-<!-- модалка редактирования профиля -->
 <div id="editProfileModal" class="modal" style="display: none;">
     <div class="modal-card">
         <h3>✏️ Редактировать</h3>
@@ -362,7 +391,6 @@
     let currentUser = null;
     let currentImageData = null;
 
-    // helpers
     async function compressImage(base64, maxWidth=800, quality=0.6) {
         return new Promise((resolve) => {
             const img = new Image();
@@ -378,12 +406,21 @@
         });
     }
 
+    function extractNumbers(text) {
+        // ищем все числа, фильтруем пустые
+        let numbers = [];
+        const matches = text.match(/\d+/g);
+        if (!matches) return [];
+        numbers = matches.map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0);
+        return numbers;
+    }
+
     function showStatus(elId, msg, type) {
         const div = document.getElementById(elId);
         if (div) { div.innerHTML = `<div class="status ${type}">${msg}</div>`; setTimeout(() => div.innerHTML = '', 3500); }
     }
 
-    // авторизация
+    // ========== АВТОРИЗАЦИЯ ==========
     async function register() {
         const payload = {
             username: document.getElementById('regUsername').value,
@@ -445,18 +482,29 @@
     }
     function switchMain(tab) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        if (tab === 'leaderboard') document.getElementById('leaderboardPanel').classList.add('active');
-        if (tab === 'mystats') document.getElementById('mystatsPanel').classList.add('active');
-        if (tab === 'admin') { document.getElementById('adminPanel').classList.add('active'); if (currentUser?.role === 'admin') loadAdminStats(); }
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        if (tab === 'leaderboard') {
+            document.getElementById('leaderboardPanel').classList.add('active');
+            document.querySelector('.tabs .tab').classList.add('active');
+        }
+        if (tab === 'mystats') {
+            document.getElementById('mystatsPanel').classList.add('active');
+            document.querySelectorAll('.tabs .tab')[1].classList.add('active');
+        }
+        if (tab === 'admin') {
+            document.getElementById('adminPanel').classList.add('active');
+            document.getElementById('adminTabBtn').classList.add('active');
+            if (currentUser?.role === 'admin') loadAdminStats();
+        }
     }
 
-    // лидерборд
+    // ========== ЛИДЕРБОРД ==========
     async function loadLeaderboard() {
         const res = await fetch('/api/leaderboard');
         const data = await res.json();
         const tbody = document.getElementById('leaderboardBody');
         tbody.innerHTML = '';
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="5">Нет данных</td></tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<td colspan="5">Нет данных</td>'; return; }
         data.slice(0, 50).forEach((p, idx) => {
             let cls = '';
             if (idx === 0) cls = 'rank-1';
@@ -472,7 +520,7 @@
         const stats = await res.json();
         const tbody = document.getElementById('myStatsBody');
         tbody.innerHTML = '';
-        if (!stats.length) { tbody.innerHTML = '<tr><td colspan="9">Нет данных</td></tr>'; return; }
+        if (!stats.length) { tbody.innerHTML = '<td colspan="9">Нет данных</td>'; return; }
         stats.forEach(s => {
             tbody.innerHTML += `<tr><td>${new Date(s.date).toLocaleDateString()}</td><td>${s.gameNick}</td><td>${s.kills}</td><td>${s.killPercent||0}%</td><td>${s.hsPercent||0}%</td><td>${s.damage?.toLocaleString()}</td><td>${s.videoLink ? `<a href="${s.videoLink}" target="_blank">🎥</a>` : '—'}</td><td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}</td><td>${s.verified ? '✅' : '⏳'}</td></tr>`;
         });
@@ -506,12 +554,12 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div style="cursor:pointer; text-align:center"><img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;"></div>`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // загрузка скрина
+    // ========== НЕЙРОНКА УЛУЧШЕННАЯ ==========
     document.getElementById('fileInput').onchange = (e) => {
         const f = e.target.files[0];
         if (f) {
             const r = new FileReader();
-            r.onload = (ev) => { currentImageData = ev.target.result; document.getElementById('previewImg').innerHTML = `<img src="${currentImageData}" style="max-width:100%; max-height:240px; border-radius: 24px; margin-top:12px;">`; showStatus('uploadStatus', '✅ Изображение загружено', 'success'); };
+            r.onload = (ev) => { currentImageData = ev.target.result; document.getElementById('previewImg').innerHTML = `<img src="${currentImageData}" style="max-width:100%; max-height:240px; border-radius: 24px; margin-top:12px; border:1px solid #ffaa33;">`; showStatus('uploadStatus', '✅ Изображение загружено', 'success'); };
             r.readAsDataURL(f);
         }
     };
@@ -519,17 +567,17 @@
     async function submitStats() {
         if (!currentUser) { alert('Войдите в аккаунт'); return; }
         if (!currentImageData) { alert('Сначала выберите скриншот'); return; }
-        showStatus('uploadStatus', '🔍 Распознавание...', 'success');
+        showStatus('uploadStatus', '🔍 Распознавание (улучшенная нейронка)...', 'success');
         try {
             const { data: { text } } = await Tesseract.recognize(currentImageData, 'rus+eng');
-            const nums = text.match(/\d+/g);
-            if (nums && nums.length >= 4) {
-                const kills = parseInt(nums[0]);
-                const killPercent = parseFloat(nums[1]);
-                const hsPercent = parseFloat(nums[2]);
-                const damage = parseInt(nums[3]);
+            const rawNumbers = extractNumbers(text);
+            if (rawNumbers.length >= 4) {
+                const kills = rawNumbers[0];
+                const killPercent = rawNumbers[1];
+                const hsPercent = rawNumbers[2];
+                const damage = rawNumbers[3];
                 document.getElementById('ocrResult').style.display = 'block';
-                document.getElementById('ocrText').innerHTML = `Убийства: ${kills}  |  % убийств: ${killPercent}%  |  HS%: ${hsPercent}%  |  Урон: ${damage}`;
+                document.getElementById('ocrText').innerHTML = `💀 Убийства: ${kills} &nbsp;| 🎯 % убийств: ${killPercent}% &nbsp;| 💥 HS%: ${hsPercent}% &nbsp;| ⚡ Урон: ${damage.toLocaleString()}`;
                 const compressed = await compressImage(currentImageData, 800, 0.6);
                 const payload = {
                     username: currentUser.username,
@@ -549,8 +597,10 @@
                     if (currentUser.role === 'admin') loadAdminStats();
                     loadLeaderboard();
                 } else showStatus('uploadStatus', '❌ Ошибка отправки', 'error');
-            } else showStatus('uploadStatus', '❌ Не найдено 4 числа (убийства, %, HS%, урон)', 'error');
-        } catch(e) { showStatus('uploadStatus', '❌ Ошибка распознавания', 'error'); }
+            } else {
+                showStatus('uploadStatus', `❌ Найдено только ${rawNumbers.length} чисел. Нужно 4: убийства, %, HS%, урон`, 'error');
+            }
+        } catch(e) { console.error(e); showStatus('uploadStatus', '❌ Ошибка распознавания', 'error'); }
     }
 
     // инициализация
