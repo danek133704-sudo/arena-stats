@@ -7,9 +7,21 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
+console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
+});
+
+// Проверка подключения
+pool.connect((err, client, release) => {
+    if (err) {
+        console.error('❌ Ошибка подключения к БД:', err.message);
+    } else {
+        console.log('✅ База данных подключена');
+        release();
+    }
 });
 
 async function initDb() {
@@ -48,16 +60,15 @@ async function initDb() {
                 'INSERT INTO users (username, password, game_nick, role) VALUES ($1, $2, $3, $4)',
                 ['admin', hash, 'Admin', 'admin']
             );
-            console.log('✅ Админ создан (admin / gtafak)');
+            console.log('✅ Админ создан');
         } else {
             const hash = await bcrypt.hash('gtafak', 10);
             await pool.query('UPDATE users SET password = $1 WHERE username = $2', [hash, 'admin']);
-            console.log('✅ Пароль админа обновлён на gtafak');
+            console.log('✅ Пароль админа обновлён');
         }
-        
         console.log('✅ База готова');
     } catch (err) {
-        console.error('Ошибка БД:', err);
+        console.error('❌ Ошибка инициализации:', err.message);
     }
 }
 
@@ -67,18 +78,23 @@ initDb();
 app.post('/api/register', async (req, res) => {
     try {
         const { username, password, gameNick } = req.body;
+        console.log('Регистрация:', username);
+        
         const exist = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
         if (exist.rows.length > 0) {
             return res.status(400).json({ error: 'Пользователь уже существует' });
         }
+        
         const hash = await bcrypt.hash(password, 10);
         await pool.query(
             'INSERT INTO users (username, password, game_nick) VALUES ($1, $2, $3)',
             [username, hash, gameNick || username]
         );
+        
+        console.log('✅ Пользователь зарегистрирован:', username);
         res.json({ success: true });
     } catch (e) {
-        console.error(e);
+        console.error('Ошибка регистрации:', e);
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
@@ -105,6 +121,7 @@ app.post('/api/login', async (req, res) => {
             }
         });
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'Ошибка входа' });
     }
 });
@@ -115,7 +132,7 @@ app.put('/api/profile', async (req, res) => {
         await pool.query('UPDATE users SET game_nick = $1 WHERE username = $2', [gameNick, username]);
         res.json({ success: true });
     } catch (e) {
-        res.status(500).json({ error: 'Ошибка обновления' });
+        res.status(500).json({ error: 'Ошибка' });
     }
 });
 
@@ -134,7 +151,7 @@ app.post('/api/stats', async (req, res) => {
         res.json({ success: true });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ error: 'Ошибка сохранения' });
+        res.status(500).json({ error: 'Ошибка' });
     }
 });
 
@@ -157,6 +174,28 @@ app.put('/api/stats/:id/verify', async (req, res) => {
 app.delete('/api/stats/:id', async (req, res) => {
     await pool.query('DELETE FROM stats WHERE id = $1', [req.params.id]);
     res.json({ success: true });
+});
+
+app.get('/api/leaderboard', async (req, res) => {
+    const result = await pool.query(`
+        SELECT username, game_nick, SUM(kills) as kills, SUM(damage) as damage
+        FROM stats
+        WHERE verified = true
+        GROUP BY username, game_nick
+        ORDER BY kills DESC
+        LIMIT 50
+    `);
+    res.json(result.rows);
+});
+
+app.get('/', (req, res) => {
+    res.sendFile('index.html', { root: 'public' });
+});
+
+app.listen(PORT, () => {
+    console.log(`✅ Сервер на порту ${PORT}`);
+    console.log(`👑 Админ: admin / gtafak`);
+});
 });
 
 app.get('/api/leaderboard', async (req, res) => {
