@@ -55,9 +55,9 @@
         .error { background: #c6282840; color: #ffcdd2; border: 1px solid #c62828; }
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000000dd; backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-card { background: #121212; border-radius: 32px; padding: 2rem; max-width: 420px; width: 90%; border: 1px solid #ffaa33; }
-        .ocr-highlight { background: #ffaa3310; border-left: 3px solid #ffaa33; padding: 12px; border-radius: 20px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .ocr-highlight { background: #ffaa3310; border-left: 3px solid #ffaa33; padding: 12px; border-radius: 20px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .manual-section { background: #1a1a1a; border-radius: 24px; padding: 20px; margin-top: 20px; border: 1px solid #ffaa3350; }
-        .send-btn { background: #ffaa33; color: #111; font-weight: bold; margin-top: 10px; width: 100%; }
+        .send-btn { background: #ffaa33; color: #111; font-weight: bold; margin-top: 10px; width: 100%; padding: 12px; }
         @media (max-width: 700px) { .navbar { flex-direction: column; gap: 12px; } .manual-input-row { flex-direction: column; } }
     </style>
 </head>
@@ -73,7 +73,7 @@
             <div class="profile-menu" style="display: inline-block; margin-left: 12px;">
                 <button class="btn-outline" onclick="toggleProfile()">👤 Профиль</button>
                 <div id="profileDropdown" class="profile-dropdown" style="display: none;">
-                    <div><strong>Игровой ник:</strong> <span id="profileGameNick">—</span></div>
+                    <div><strong>Текущий ник:</strong> <span id="profileGameNick">—</span></div>
                     <input type="text" id="editGameNickInput" placeholder="Новый игровой ник" style="margin: 10px 0; width: 100%;">
                     <button onclick="saveProfileNick()" style="margin-top: 5px;">💾 Сохранить ник</button>
                     <button onclick="logout()" class="btn-outline" style="margin-top: 10px; width: 100%;">🚪 Выйти</button>
@@ -99,7 +99,7 @@
             <div id="registerForm" style="display: none;">
                 <input type="text" id="regUsername" placeholder="Логин">
                 <input type="password" id="regPassword" placeholder="Пароль">
-                <input type="text" id="regGameNick" placeholder="Ник в игре (как на скрине)">
+                <input type="text" id="regGameNick" placeholder="Ник в игре">
                 <button onclick="register()">Зарегистрироваться</button>
                 <div id="regStatus" class="status"></div>
             </div>
@@ -110,7 +110,7 @@
         <h2 style="margin-bottom: 16px;">📸 Загрузить скриншот</h2>
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
             <div style="font-size: 44px;">📸</div>
-            <p>Нажми или перетащи скриншот с таблицей статистики</p>
+            <p>Нажми или перетащи скриншот</p>
             <input type="file" id="fileInput" hidden accept="image/*">
         </div>
         <div id="previewImg" style="text-align: center; cursor: pointer;"></div>
@@ -188,19 +188,25 @@
     async function saveProfileNick() {
         const newNick = document.getElementById('editGameNickInput').value.trim();
         if (!newNick) { alert('Введите ник'); return; }
-        const res = await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser.username, gameNick: newNick }) });
+        const res = await fetch('/api/profile', { 
+            method: 'PUT', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ username: currentUser.username, gameNick: newNick }) 
+        });
+        const data = await res.json();
         if (res.ok) {
-            const data = await res.json();
             currentUser.gameNick = data.user.gameNick;
             localStorage.setItem('user', JSON.stringify(currentUser));
-            document.getElementById('profileGameNick').innerText = currentUser.gameNick || currentUser.username;
+            document.getElementById('profileGameNick').innerText = currentUser.gameNick;
             document.getElementById('editGameNickInput').value = '';
             document.getElementById('profileDropdown').style.display = 'none';
             showStatus('uploadStatus', '✅ Ник обновлён!', 'success');
             recognizedStats = null;
             document.getElementById('ocrResult').style.display = 'none';
             document.getElementById('sendRecognizedBtn').style.display = 'none';
-        } else showStatus('uploadStatus', '❌ Ошибка', 'error');
+        } else {
+            showStatus('uploadStatus', '❌ ' + (data.error || 'Ошибка'), 'error');
+        }
     }
 
     // ========== АВТОРИЗАЦИЯ ==========
@@ -257,7 +263,7 @@
         if (!data.length) { tbody.innerHTML = '<td colspan="5">Нет данных<\/td>'; return; }
         data.slice(0, 50).forEach((p, idx) => {
             let cls = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
-            tbody.innerHTML += `<tr class="${cls}"><td><b>${idx+1}</b><\/td><td><b>${p.game_nick || p.username}</b><br><small>${p.username}</small><\/td><td>${p.kills}<\/td><td>${p.damage?.toLocaleString()}<\/td><td>${p.video_link ? `<a href="${p.video_link}" target="_blank">🎥</a>` : '—'}<\/td><\/tr>`;
+            tbody.innerHTML += `<tr class="${cls}">}<b>${idx+1}</b> <b>${p.game_nick || p.username}</b><br><small>${p.username}</small> ${p.kills} ${p.damage?.toLocaleString()} ${p.video_link ? `<a href="${p.video_link}" target="_blank">🎥</a>` : '—'} <\/tr>`;
         });
     }
     function filterLeaderboard() {
@@ -297,7 +303,7 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НЕЙРОНКА - ИЩЕТ ЛЮБОЙ НИК ==========
+    // ========== НЕЙРОНКА ==========
     async function findMyStatsInScreenshot() {
         if (!currentImageData || !currentUser) return null;
         const gameNick = (currentUser.gameNick || currentUser.username).toLowerCase();
@@ -344,7 +350,7 @@
                     document.getElementById('sendRecognizedBtn').style.display = 'block';
                     showStatus('uploadStatus', '✅ Нажмите "Отправить"', 'success');
                 } else {
-                    document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${currentUser.gameNick || currentUser.username}" в таблице. Попробуйте ручной ввод.`;
+                    document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${currentUser.gameNick || currentUser.username}" в таблице.`;
                     document.getElementById('ocrResult').style.display = 'flex';
                     document.getElementById('sendRecognizedBtn').style.display = 'none';
                     recognizedStats = null;
