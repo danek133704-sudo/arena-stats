@@ -218,7 +218,7 @@
             box-shadow: 0 4px 12px rgba(255, 170, 51, 0.2);
         }
 
-        .verify, .delete {
+        .verify, .delete, .delete-mine {
             padding: 6px 16px;
             border-radius: 32px;
             font-weight: bold;
@@ -227,8 +227,8 @@
         }
         .verify { background: #2e7d32; color: white; border: none; }
         .verify:hover { background: #1b5e20; transform: scale(0.96); }
-        .delete { background: #c62828; color: white; border: none; margin-left: 6px; }
-        .delete:hover { background: #b71c1c; transform: scale(0.96); }
+        .delete, .delete-mine { background: #c62828; color: white; border: none; margin-left: 6px; }
+        .delete:hover, .delete-mine:hover { background: #b71c1c; transform: scale(0.96); }
 
         .screenshot-thumb {
             width: 48px;
@@ -287,6 +287,12 @@
             border-radius: 20px;
             margin-top: 12px;
         }
+        .retry-btn {
+            background: #ffaa33;
+            margin-left: 10px;
+            padding: 4px 12px;
+            font-size: 12px;
+        }
         @media (max-width: 700px) {
             .navbar { flex-direction: column; gap: 12px; }
             .stat-card { flex-direction: column; align-items: flex-start; }
@@ -305,7 +311,6 @@
             <div class="profile-menu" style="display: inline-block; margin-left: 12px;">
                 <button class="btn-outline" onclick="toggleProfile()">👤 Профиль</button>
                 <div id="profileDropdown" class="profile-dropdown" style="display: none;">
-                    <div><strong>Discord:</strong> <span id="profileDiscord">—</span></div>
                     <div><strong>Игровой ник:</strong> <span id="profileGameNick">—</span></div>
                     <button onclick="openEditProfile()" style="margin-top: 10px;">✏️ Редактировать</button>
                     <button onclick="logout()" class="btn-outline" style="margin-top: 6px;">🚪 Выйти</button>
@@ -349,6 +354,7 @@
         <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео (YouTube/Twitch)">
         <div id="ocrResult" class="ocr-highlight" style="display: none;">
             <b>🔍 Распознано:</b> <span id="ocrText"></span>
+            <button class="retry-btn" onclick="retryOCR()">🔄 Распознать заново</button>
         </div>
         <button onclick="submitStats()" style="margin-top: 14px;">📤 Отправить статистику</button>
         <div id="uploadStatus" class="status"></div>
@@ -375,8 +381,8 @@
 
         <div id="mystatsPanel" class="tab-content">
             <table id="myStatsTable">
-                <thead> <th>Дата</th><th>Ник</th><th>Убийства</th><th>%</th><th>HS%</th><th>Урон</th><th>Видео</th><th>Скрин</th><th>Статус</th> </thead>
-                <tbody id="myStatsBody"><td colspan="9">Нет данных</td></tbody>
+                <thead> <th>Дата</th><th>Ник</th><th>Убийства</th><th>%</th><th>HS%</th><th>Урон</th><th>Видео</th><th>Скрин</th><th>Статус</th><th>Действия</th> </thead>
+                <tbody id="myStatsBody"><td colspan="10">Нет данных</td></tbody>
             </table>
         </div>
 
@@ -400,6 +406,7 @@
     let currentUser = null;
     let currentImageData = null;
     let allLeaderboardData = [];
+    let lastRawNumbers = [];
 
     async function compressImage(base64, maxWidth=800, quality=0.6) {
         return new Promise((resolve) => {
@@ -419,7 +426,7 @@
     function extractNumbers(text) {
         const matches = text.match(/\d+/g);
         if (!matches) return [];
-        return matches.map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0);
+        return matches.map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0 && n < 1000000);
     }
 
     function showStatus(elId, msg, type) {
@@ -454,7 +461,6 @@
             document.getElementById('showAuthBtn').style.display = 'none';
             document.getElementById('userInfo').style.display = 'inline-block';
             document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
-            document.getElementById('profileDiscord').innerText = currentUser.discord || '—';
             document.getElementById('profileGameNick').innerText = currentUser.gameNick || currentUser.username;
             if (currentUser.role === 'admin') document.getElementById('adminTabBtn').style.display = 'inline-block';
             loadLeaderboard();
@@ -494,6 +500,7 @@
         if (tab === 'mystats') {
             document.getElementById('mystatsPanel').classList.add('active');
             document.querySelectorAll('.tabs .tab')[1].classList.add('active');
+            loadMyStats();
         }
         if (tab === 'admin') {
             document.getElementById('adminPanel').classList.add('active');
@@ -502,7 +509,7 @@
         }
     }
 
-    // ========== ЛИДЕРБОРД С ПОИСКОМ ==========
+    // ========== ЛИДЕРБОРД ==========
     async function loadLeaderboard() {
         const res = await fetch('/api/leaderboard');
         allLeaderboardData = await res.json();
@@ -518,39 +525,54 @@
             if (idx === 0) cls = 'rank-1';
             if (idx === 1) cls = 'rank-2';
             if (idx === 2) cls = 'rank-3';
-            tbody.innerHTML += `<tr class="${cls}">}<strong>${idx+1}</strong> <strong>${p.game_nick || p.username}</strong><br><small>${p.username}</small> ${p.kills} ${p.damage?.toLocaleString()} ${p.video_link ? `<a href="${p.video_link}" target="_blank">🎥</a>` : '—'} `;
+            tbody.innerHTML += `<tr class="${cls}"><td><b>${idx+1}</b></td><td><b>${p.game_nick || p.username}</b><br><small>${p.username}</small></td><td>${p.kills}</td><td>${p.damage?.toLocaleString()}</td><td>${p.video_link ? `<a href="${p.video_link}" target="_blank">🎥</a>` : '—'}</td></tr>`;
         });
     }
 
     function filterLeaderboard() {
         const searchTerm = document.getElementById('searchPlayerInput').value.toLowerCase().trim();
-        if (!searchTerm) {
-            renderLeaderboard(allLeaderboardData);
-            return;
-        }
-        const filtered = allLeaderboardData.filter(p => 
-            (p.game_nick?.toLowerCase().includes(searchTerm)) || 
-            (p.username?.toLowerCase().includes(searchTerm))
-        );
+        if (!searchTerm) { renderLeaderboard(allLeaderboardData); return; }
+        const filtered = allLeaderboardData.filter(p => (p.game_nick?.toLowerCase().includes(searchTerm)) || (p.username?.toLowerCase().includes(searchTerm)));
         renderLeaderboard(filtered);
     }
+    function resetLeaderboard() { document.getElementById('searchPlayerInput').value = ''; renderLeaderboard(allLeaderboardData); }
 
-    function resetLeaderboard() {
-        document.getElementById('searchPlayerInput').value = '';
-        renderLeaderboard(allLeaderboardData);
-    }
-
-    // ========== СТАТИСТИКА ==========
+    // ========== МОЯ СТАТИСТИКА С УДАЛЕНИЕМ ==========
     async function loadMyStats() {
         if (!currentUser) return;
         const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } });
         const stats = await res.json();
         const tbody = document.getElementById('myStatsBody');
         tbody.innerHTML = '';
-        if (!stats.length) { tbody.innerHTML = '<td colspan="9">Нет данных</td>'; return; }
+        if (!stats.length) { tbody.innerHTML = '<td colspan="10">Нет данных</td>'; return; }
         stats.forEach(s => {
-            tbody.innerHTML += `}<td>${new Date(s.date).toLocaleDateString()} <td><strong>${s.game_nick}</strong> <td>${s.kills} <td>${s.kill_percent||0}% <td>${s.hs_percent||0}% <td>${s.damage?.toLocaleString()} <td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'} <td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'} <td>${s.verified ? '✅' : '⏳'} `;
+            tbody.innerHTML += `
+                <tr>
+                    <td>${new Date(s.date).toLocaleDateString()}</td>
+                    <td><strong>${s.game_nick}</strong></td>
+                    <td>${s.kills}</td>
+                    <td>${s.kill_percent||0}%</td>
+                    <td>${s.hs_percent||0}%</td>
+                    <td>${s.damage?.toLocaleString()}</td>
+                    <td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}</td>
+                    <td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}</td>
+                    <td>${s.verified ? '✅ Подтверждена' : '⏳ Ожидает'}</td>
+                    <td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️ Удалить</button>` : '—'}</td>
+                </tr>
+            `;
         });
+    }
+
+    async function deleteMyStat(id) {
+        if (!confirm('Удалить эту статистику? Она ещё не подтверждена.')) return;
+        const res = await fetch(`/api/stats/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            showStatus('uploadStatus', '✅ Статистика удалена', 'success');
+            loadMyStats();
+            loadLeaderboard();
+        } else {
+            showStatus('uploadStatus', '❌ Ошибка удаления', 'error');
+        }
     }
 
     async function loadAdminStats() {
@@ -581,12 +603,53 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div style="cursor:pointer; text-align:center"><img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;"></div>`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НЕЙРОНКА ==========
-    document.getElementById('fileInput').onchange = (e) => {
+    // ========== УЛУЧШЕННАЯ НЕЙРОНКА ==========
+    let lastText = '';
+    async function runOCR() {
+        if (!currentImageData) return null;
+        const { data: { text } } = await Tesseract.recognize(currentImageData, 'rus+eng', {
+            tessedit_char_whitelist: '0123456789% ',
+            tessedit_pageseg_mode: 6
+        });
+        lastText = text;
+        const rawNumbers = extractNumbers(text);
+        return rawNumbers;
+    }
+
+    async function retryOCR() {
+        if (!currentImageData) return;
+        showStatus('uploadStatus', '🔍 Повторное распознавание...', 'success');
+        const numbers = await runOCR();
+        if (numbers.length >= 4) {
+            lastRawNumbers = numbers.slice(0, 4);
+            document.getElementById('ocrText').innerHTML = `💀 Убийства: ${lastRawNumbers[0]} &nbsp;| 🎯 % убийств: ${lastRawNumbers[1]}% &nbsp;| 💥 HS%: ${lastRawNumbers[2]}% &nbsp;| ⚡ Урон: ${lastRawNumbers[3].toLocaleString()}`;
+            document.getElementById('ocrResult').style.display = 'block';
+            showStatus('uploadStatus', '✅ Распознано! Можете отправить', 'success');
+        } else {
+            document.getElementById('ocrText').innerHTML = `❌ Найдено только ${numbers.length} чисел. Попробуйте другой скриншот или нажмите "Распознать заново"`;
+            document.getElementById('ocrResult').style.display = 'block';
+        }
+    }
+
+    document.getElementById('fileInput').onchange = async (e) => {
         const f = e.target.files[0];
         if (f) {
             const r = new FileReader();
-            r.onload = (ev) => { currentImageData = ev.target.result; document.getElementById('previewImg').innerHTML = `<img src="${currentImageData}" style="max-width:100%; max-height:240px; border-radius: 24px; margin-top:12px; border:1px solid #ffaa33;">`; showStatus('uploadStatus', '✅ Изображение загружено', 'success'); };
+            r.onload = async (ev) => {
+                currentImageData = ev.target.result;
+                document.getElementById('previewImg').innerHTML = `<img src="${currentImageData}" style="max-width:100%; max-height:240px; border-radius: 24px; margin-top:12px; border:1px solid #ffaa33;">`;
+                showStatus('uploadStatus', '🔍 Распознавание...', 'success');
+                const numbers = await runOCR();
+                if (numbers.length >= 4) {
+                    lastRawNumbers = numbers.slice(0, 4);
+                    document.getElementById('ocrText').innerHTML = `💀 Убийства: ${lastRawNumbers[0]} &nbsp;| 🎯 % убийств: ${lastRawNumbers[1]}% &nbsp;| 💥 HS%: ${lastRawNumbers[2]}% &nbsp;| ⚡ Урон: ${lastRawNumbers[3].toLocaleString()}`;
+                    document.getElementById('ocrResult').style.display = 'block';
+                    showStatus('uploadStatus', '✅ Готово к отправке', 'success');
+                } else {
+                    document.getElementById('ocrText').innerHTML = `❌ Найдено только ${numbers.length} чисел. Попробуйте другой скриншот или нажмите "Распознать заново"`;
+                    document.getElementById('ocrResult').style.display = 'block';
+                }
+            };
             r.readAsDataURL(f);
         }
     };
@@ -594,40 +657,36 @@
     async function submitStats() {
         if (!currentUser) { alert('Войдите в аккаунт'); return; }
         if (!currentImageData) { alert('Сначала выберите скриншот'); return; }
-        showStatus('uploadStatus', '🔍 Распознавание...', 'success');
+        if (!lastRawNumbers.length || lastRawNumbers.length < 4) {
+            showStatus('uploadStatus', '❌ Сначала дождитесь распознавания чисел', 'error');
+            return;
+        }
+        showStatus('uploadStatus', '📤 Отправка...', 'success');
         try {
-            const { data: { text } } = await Tesseract.recognize(currentImageData, 'rus+eng');
-            const rawNumbers = extractNumbers(text);
-            if (rawNumbers.length >= 4) {
-                const kills = rawNumbers[0];
-                const killPercent = rawNumbers[1];
-                const hsPercent = rawNumbers[2];
-                const damage = rawNumbers[3];
-                document.getElementById('ocrResult').style.display = 'block';
-                document.getElementById('ocrText').innerHTML = `💀 Убийства: ${kills} &nbsp;| 🎯 % убийств: ${killPercent}% &nbsp;| 💥 HS%: ${hsPercent}% &nbsp;| ⚡ Урон: ${damage.toLocaleString()}`;
-                const compressed = await compressImage(currentImageData, 800, 0.6);
-                const payload = {
-                    username: currentUser.username,
-                    kills, killPercent, hsPercent, damage,
-                    videoLink: document.getElementById('videoLink').value,
-                    screenshot: compressed
-                };
-                const res = await fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (res.ok) {
-                    showStatus('uploadStatus', '✅ Статистика отправлена на проверку!', 'success');
-                    currentImageData = null;
-                    document.getElementById('fileInput').value = '';
-                    document.getElementById('previewImg').innerHTML = '';
-                    document.getElementById('videoLink').value = '';
-                    document.getElementById('ocrResult').style.display = 'none';
-                    loadMyStats();
-                    if (currentUser.role === 'admin') loadAdminStats();
-                    loadLeaderboard();
-                } else showStatus('uploadStatus', '❌ Ошибка отправки', 'error');
-            } else {
-                showStatus('uploadStatus', `❌ Найдено только ${rawNumbers.length} чисел. Нужно 4: убийства, %, HS%, урон`, 'error');
-            }
-        } catch(e) { console.error(e); showStatus('uploadStatus', '❌ Ошибка распознавания', 'error'); }
+            const compressed = await compressImage(currentImageData, 800, 0.6);
+            const payload = {
+                username: currentUser.username,
+                kills: lastRawNumbers[0],
+                killPercent: lastRawNumbers[1],
+                hsPercent: lastRawNumbers[2],
+                damage: lastRawNumbers[3],
+                videoLink: document.getElementById('videoLink').value,
+                screenshot: compressed
+            };
+            const res = await fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (res.ok) {
+                showStatus('uploadStatus', '✅ Статистика отправлена на проверку!', 'success');
+                currentImageData = null;
+                document.getElementById('fileInput').value = '';
+                document.getElementById('previewImg').innerHTML = '';
+                document.getElementById('videoLink').value = '';
+                document.getElementById('ocrResult').style.display = 'none';
+                lastRawNumbers = [];
+                loadMyStats();
+                if (currentUser.role === 'admin') loadAdminStats();
+                loadLeaderboard();
+            } else showStatus('uploadStatus', '❌ Ошибка отправки', 'error');
+        } catch(e) { console.error(e); showStatus('uploadStatus', '❌ Ошибка', 'error'); }
     }
 
     // инициализация
@@ -639,7 +698,6 @@
         document.getElementById('showAuthBtn').style.display = 'none';
         document.getElementById('userInfo').style.display = 'inline-block';
         document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
-        document.getElementById('profileDiscord').innerText = currentUser.discord || '—';
         document.getElementById('profileGameNick').innerText = currentUser.gameNick || currentUser.username;
         if (currentUser.role === 'admin') document.getElementById('adminTabBtn').style.display = 'inline-block';
         loadLeaderboard(); loadMyStats(); if (currentUser.role === 'admin') loadAdminStats();
