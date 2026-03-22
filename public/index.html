@@ -58,6 +58,8 @@
         .ocr-highlight { background: #ffaa3310; border-left: 3px solid #ffaa33; padding: 12px; border-radius: 20px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .manual-section { background: #1a1a1a; border-radius: 24px; padding: 20px; margin-top: 20px; border: 1px solid #ffaa3350; }
         .send-btn { background: #ffaa33; color: #111; font-weight: bold; margin-top: 10px; width: 100%; padding: 12px; }
+        .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #ffaa33; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 10px; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 700px) { .navbar { flex-direction: column; gap: 12px; } .manual-input-row { flex-direction: column; } }
     </style>
 </head>
@@ -157,12 +159,13 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
     let currentUser = null;
     let currentImageData = null;
     let allLeaderboardData = [];
     let recognizedStats = null;
+    let ocrWorker = null;
 
     async function compressImage(base64, maxWidth=800, quality=0.6) {
         return new Promise((resolve) => {
@@ -283,7 +286,7 @@
         tbody.innerHTML = '';
         if (!stats.length) { tbody.innerHTML = '<td colspan="10">Нет данных<\/td>'; return; }
         stats.forEach(s => {
-            tbody.innerHTML += `<tr><td>${new Date(s.date).toLocaleDateString()}<\/td><td><strong>${s.game_nick}<\/strong><\/td><td>${s.kills}<\/td><td>${s.kill_percent||0}%<\/td><td>${s.hs_percent||0}%<\/td><td>${s.damage?.toLocaleString()}<\/td><td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}<\/td><td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}<\/td><td>${s.verified ? '✅' : '⏳'}<\/td><td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—'}<\/td><\/tr>`;
+            tbody.innerHTML += `}<td>${new Date(s.date).toLocaleDateString()}<\/td><td><strong>${s.game_nick}<\/strong><\/td><td>${s.kills}<\/td><td>${s.kill_percent||0}%<\/td><td>${s.hs_percent||0}%<\/td><td>${s.damage?.toLocaleString()}<\/td><td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}<\/td><td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}<\/td><td>${s.verified ? '✅' : '⏳'}<\/td><td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—'}<\/td><\/tr>`;
         });
     }
     async function deleteMyStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadMyStats(); loadLeaderboard(); showStatus('uploadStatus', '✅ Удалено', 'success'); }
@@ -303,11 +306,29 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НЕЙРОНКА ==========
+    // ========== НОВАЯ НЕЙРОНКА - ПРЯМОЙ ПОИСК ПО НИКУ ==========
     async function findMyStatsInScreenshot() {
         if (!currentImageData || !currentUser) return null;
+        
         const gameNick = (currentUser.gameNick || currentUser.username).toLowerCase();
-        const { data: { text } } = await Tesseract.recognize(currentImageData, 'rus+eng', { tessedit_pageseg_mode: 6 });
+        
+        // Создаём воркер если ещё нет
+        if (!ocrWorker) {
+            showStatus('uploadStatus', '🔄 Загрузка нейронки (первый раз может быть долго)...', 'success');
+            ocrWorker = await Tesseract.createWorker('rus', 1, {
+                langPath: 'https://tessdata.projectnaptha.com/5.0.0',
+                corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/tesseract-core.wasm.js'
+            });
+            await ocrWorker.setParameters({
+                tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_',
+                tessedit_pageseg_mode: '6'
+            });
+            showStatus('uploadStatus', '✅ Нейронка загружена!', 'success');
+        }
+        
+        showStatus('uploadStatus', '🔍 Распознавание...', 'success');
+        const { data: { text } } = await ocrWorker.recognize(currentImageData);
+        
         const lines = text.split('\n');
         for (let line of lines) {
             if (line.toLowerCase().includes(gameNick)) {
@@ -341,7 +362,6 @@
                 currentImageData = ev.target.result;
                 const imgElement = `<img src="${currentImageData}" class="clickable-image" style="max-width:100%; max-height:240px; border-radius: 24px; margin-top:12px; border:1px solid #ffaa33;" onclick="showFullscreenImage('${currentImageData}')">`;
                 document.getElementById('previewImg').innerHTML = imgElement;
-                showStatus('uploadStatus', '🔍 Поиск вашего ника...', 'success');
                 const stats = await findMyStatsInScreenshot();
                 if (stats) {
                     recognizedStats = stats;
@@ -350,7 +370,7 @@
                     document.getElementById('sendRecognizedBtn').style.display = 'block';
                     showStatus('uploadStatus', '✅ Нажмите "Отправить"', 'success');
                 } else {
-                    document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${currentUser.gameNick || currentUser.username}" в таблице.`;
+                    document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${currentUser.gameNick || currentUser.username}" в таблице. Попробуйте ручной ввод.`;
                     document.getElementById('ocrResult').style.display = 'flex';
                     document.getElementById('sendRecognizedBtn').style.display = 'none';
                     recognizedStats = null;
@@ -362,7 +382,6 @@
 
     async function retryOCR() {
         if (!currentImageData) return;
-        showStatus('uploadStatus', '🔍 Повторный поиск...', 'success');
         const stats = await findMyStatsInScreenshot();
         if (stats) {
             recognizedStats = stats;
