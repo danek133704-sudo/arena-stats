@@ -15,42 +15,36 @@ function loadData() {
     try {
         if (fs.existsSync(DATA_FILE)) {
             data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-            console.log(`📁 Загружено: ${data.users.length} пользователей, ${data.stats.length} записей`);
         } else {
             data = {
                 users: [{ id: 1, username: 'admin', password: 'admin123', gameNick: 'Admin', role: 'admin' }],
                 stats: []
             };
             saveData();
-            console.log('📁 Создан новый файл данных');
         }
-    } catch(e) { console.error('Ошибка загрузки:', e); }
+    } catch(e) {}
 }
 
 function saveData() {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    console.log('💾 Данные сохранены');
 }
 
 loadData();
 
 // Регистрация
 app.post('/api/register', (req, res) => {
-    const { username, password, gameNick, discord } = req.body;
+    const { username, password, gameNick } = req.body;
     if (data.users.find(u => u.username === username)) {
         return res.status(400).json({ error: 'Пользователь уже существует' });
     }
-    const role = username === 'admin' ? 'admin' : 'user';
     data.users.push({
         id: Date.now(),
         username,
         password,
         gameNick: gameNick || username,
-        discord: discord || '',
-        role: role
+        role: username === 'admin' ? 'admin' : 'user'
     });
     saveData();
-    console.log(`✅ Зарегистрирован: ${username} (${role})`);
     res.json({ success: true });
 });
 
@@ -59,14 +53,12 @@ app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     const user = data.users.find(u => u.username === username && u.password === password);
     if (!user) return res.status(400).json({ error: 'Неверный логин или пароль' });
-    console.log(`🔐 Вход: ${username} (${user.role})`);
     res.json({
         success: true,
         user: {
             id: user.id,
             username: user.username,
             gameNick: user.gameNick,
-            discord: user.discord,
             role: user.role
         }
     });
@@ -74,40 +66,37 @@ app.post('/api/login', (req, res) => {
 
 // Обновить профиль
 app.put('/api/profile', (req, res) => {
-    const { username, discord, gameNick } = req.body;
+    const { username, gameNick } = req.body;
     const user = data.users.find(u => u.username === username);
-    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
-    if (discord !== undefined) user.discord = discord;
-    if (gameNick !== undefined) user.gameNick = gameNick;
-    saveData();
-    res.json({ success: true, user: { username: user.username, discord: user.discord, gameNick: user.gameNick, role: user.role } });
+    if (user) {
+        if (gameNick) user.gameNick = gameNick;
+        saveData();
+        res.json({ success: true, user: { username: user.username, gameNick: user.gameNick, role: user.role } });
+    } else {
+        res.status(404).json({ error: 'Пользователь не найден' });
+    }
 });
 
 // Добавить статистику
 app.post('/api/stats', (req, res) => {
     const { username, kills, killPercent, hsPercent, damage, videoLink, screenshot } = req.body;
     const user = data.users.find(u => u.username === username);
-    const isAdmin = user?.role === 'admin';
-    
     const newStat = {
         id: Date.now(),
-        username: username,
+        username,
         gameNick: user?.gameNick || username,
-        kills: Number(kills) || 0,
-        killPercent: Number(killPercent) || 0,
-        hsPercent: Number(hsPercent) || 0,
-        damage: Number(damage) || 0,
+        kills: kills || 0,
+        killPercent: killPercent || 0,
+        hsPercent: hsPercent || 0,
+        damage: damage || 0,
         videoLink: videoLink || '',
         screenshot: screenshot || '',
-        verified: isAdmin ? true : false,
+        verified: user?.role === 'admin' ? true : false,
         date: new Date().toISOString()
     };
     data.stats.push(newStat);
     saveData();
-    console.log(`📊 СТАТИСТИКА СОХРАНЕНА:`);
-    console.log(`   ${username}: убийства=${newStat.kills}, %=${newStat.killPercent}%, HS%=${newStat.hsPercent}%, урон=${newStat.damage}`);
-    console.log(`   Всего записей: ${data.stats.length}, неподтверждённых: ${data.stats.filter(s => !s.verified).length}`);
-    res.json({ success: true, stat: newStat });
+    res.json({ success: true });
 });
 
 // Моя статистика
@@ -117,10 +106,8 @@ app.get('/api/stats/my', (req, res) => {
     res.json(myStats);
 });
 
-// Вся статистика (для админа)
+// Вся статистика (админ)
 app.get('/api/stats/all', (req, res) => {
-    console.log(`📋 ЗАПРОС ВСЕХ СТАТИСТИК: всего ${data.stats.length}`);
-    console.log(`📋 Детально:`, data.stats.map(s => ({ id: s.id, username: s.username, kills: s.kills, killPercent: s.killPercent, hsPercent: s.hsPercent, damage: s.damage, verified: s.verified })));
     res.json(data.stats);
 });
 
@@ -130,7 +117,6 @@ app.put('/api/stats/:id/verify', (req, res) => {
     if (stat) {
         stat.verified = true;
         saveData();
-        console.log(`✅ Подтверждена запись ${req.params.id}`);
     }
     res.json({ success: true });
 });
@@ -139,7 +125,6 @@ app.put('/api/stats/:id/verify', (req, res) => {
 app.delete('/api/stats/:id', (req, res) => {
     data.stats = data.stats.filter(s => s.id != req.params.id);
     saveData();
-    console.log(`🗑️ Удалена запись ${req.params.id}`);
     res.json({ success: true });
 });
 
