@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
         body { background: radial-gradient(circle at 20% 30%, #0d0d0d, #030303); color: #e0e0e0; min-height: 100vh; }
-        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 200, 100, 0.3); position: sticky; top: 0; z-index: 100; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 200, 100, 0.3); position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 15px; }
         .logo { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #ffcc66, #ffaa33); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .telegram-btn { background: #2c2c2c; padding: 8px 18px; border-radius: 40px; border: 1px solid #ffaa33; transition: 0.2s; }
         .telegram-btn a { color: #ffaa33; text-decoration: none; font-weight: 500; }
@@ -49,7 +49,7 @@
         .clickable-image { cursor: pointer; transition: 0.2s; }
         .clickable-image:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(255, 170, 51, 0.5); }
         .profile-menu { position: relative; display: inline-block; }
-        .profile-dropdown { position: absolute; right: 0; top: 45px; background: #1e1e1e; border: 1px solid #ffaa33; border-radius: 24px; padding: 1rem; width: 260px; z-index: 200; backdrop-filter: blur(8px); }
+        .profile-dropdown { position: absolute; right: 0; top: 45px; background: #1e1e1e; border: 1px solid #ffaa33; border-radius: 24px; padding: 1rem; width: 280px; z-index: 200; backdrop-filter: blur(8px); }
         .status { padding: 10px; border-radius: 32px; margin-top: 12px; text-align: center; }
         .success { background: #2e7d3240; color: #b9f6ca; border: 1px solid #2e7d32; }
         .error { background: #c6282840; color: #ffcdd2; border: 1px solid #c62828; }
@@ -60,7 +60,7 @@
         .send-btn { background: #ffaa33; color: #111; font-weight: bold; margin-top: 10px; width: 100%; padding: 12px; }
         .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #ffaa33; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 10px; vertical-align: middle; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 700px) { .navbar { flex-direction: column; gap: 12px; } .manual-input-row { flex-direction: column; } }
+        @media (max-width: 700px) { .navbar { flex-direction: column; text-align: center; } .manual-input-row { flex-direction: column; } }
     </style>
 </head>
 <body>
@@ -75,9 +75,10 @@
             <div class="profile-menu" style="display: inline-block; margin-left: 12px;">
                 <button class="btn-outline" onclick="toggleProfile()">👤 Профиль</button>
                 <div id="profileDropdown" class="profile-dropdown" style="display: none;">
-                    <div><strong>Текущий ник:</strong> <span id="profileGameNick">—</span></div>
-                    <input type="text" id="editGameNickInput" placeholder="Новый игровой ник" style="margin: 10px 0; width: 100%;">
-                    <button onclick="saveProfileNick()" style="margin-top: 5px;">💾 Сохранить ник</button>
+                    <div><strong>Игровой ник для распознавания:</strong></div>
+                    <input type="text" id="localGameNick" placeholder="Твой ник как на скрине" style="margin: 10px 0; width: 100%;">
+                    <button onclick="saveLocalNick()" style="margin-top: 5px;">💾 Сохранить ник локально</button>
+                    <div style="margin-top: 10px; font-size: 12px; color: #ffaa33;">Текущий: <span id="currentLocalNick">—</span></div>
                     <button onclick="logout()" class="btn-outline" style="margin-top: 10px; width: 100%;">🚪 Выйти</button>
                 </div>
             </div>
@@ -166,6 +167,7 @@
     let allLeaderboardData = [];
     let recognizedStats = null;
     let ocrWorker = null;
+    let localNick = localStorage.getItem('arena_local_nick') || '';
 
     async function compressImage(base64, maxWidth=800, quality=0.6) {
         return new Promise((resolve) => {
@@ -187,29 +189,23 @@
         if (div) { div.innerHTML = `<div class="status ${type}">${msg}</div>`; setTimeout(() => div.innerHTML = '', 3500); }
     }
 
-    // ========== РЕДАКТИРОВАНИЕ НИКА ==========
-    async function saveProfileNick() {
-        const newNick = document.getElementById('editGameNickInput').value.trim();
+    // ========== ЛОКАЛЬНОЕ СОХРАНЕНИЕ НИКА ==========
+    function saveLocalNick() {
+        const newNick = document.getElementById('localGameNick').value.trim();
         if (!newNick) { alert('Введите ник'); return; }
-        const res = await fetch('/api/profile', { 
-            method: 'PUT', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ username: currentUser.username, gameNick: newNick }) 
-        });
-        const data = await res.json();
-        if (res.ok) {
-            currentUser.gameNick = data.user.gameNick;
-            localStorage.setItem('user', JSON.stringify(currentUser));
-            document.getElementById('profileGameNick').innerText = currentUser.gameNick;
-            document.getElementById('editGameNickInput').value = '';
-            document.getElementById('profileDropdown').style.display = 'none';
-            showStatus('uploadStatus', '✅ Ник обновлён!', 'success');
-            recognizedStats = null;
-            document.getElementById('ocrResult').style.display = 'none';
-            document.getElementById('sendRecognizedBtn').style.display = 'none';
-        } else {
-            showStatus('uploadStatus', '❌ ' + (data.error || 'Ошибка'), 'error');
-        }
+        localNick = newNick;
+        localStorage.setItem('arena_local_nick', localNick);
+        document.getElementById('currentLocalNick').innerText = localNick;
+        document.getElementById('localGameNick').value = '';
+        document.getElementById('profileDropdown').style.display = 'none';
+        showStatus('uploadStatus', '✅ Ник сохранён локально!', 'success');
+        recognizedStats = null;
+        document.getElementById('ocrResult').style.display = 'none';
+        document.getElementById('sendRecognizedBtn').style.display = 'none';
+    }
+
+    function getCurrentNick() {
+        return localNick || (currentUser?.gameNick) || (currentUser?.username) || '';
     }
 
     // ========== АВТОРИЗАЦИЯ ==========
@@ -233,7 +229,7 @@
             document.getElementById('showAuthBtn').style.display = 'none';
             document.getElementById('userInfo').style.display = 'inline-block';
             document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
-            document.getElementById('profileGameNick').innerText = currentUser.gameNick || currentUser.username;
+            document.getElementById('currentLocalNick').innerText = localNick || currentUser.gameNick || currentUser.username;
             if (currentUser.role === 'admin') document.getElementById('adminTabBtn').style.display = 'inline-block';
             loadLeaderboard(); loadMyStats(); if (currentUser.role === 'admin') loadAdminStats();
         } else document.getElementById('loginStatus').innerHTML = `<div class="status error">❌ ${data.error}</div>`;
@@ -286,7 +282,7 @@
         tbody.innerHTML = '';
         if (!stats.length) { tbody.innerHTML = '<td colspan="10">Нет данных<\/td>'; return; }
         stats.forEach(s => {
-            tbody.innerHTML += `}<td>${new Date(s.date).toLocaleDateString()}<\/td><td><strong>${s.game_nick}<\/strong><\/td><td>${s.kills}<\/td><td>${s.kill_percent||0}%<\/td><td>${s.hs_percent||0}%<\/td><td>${s.damage?.toLocaleString()}<\/td><td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}<\/td><td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}<\/td><td>${s.verified ? '✅' : '⏳'}<\/td><td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—'}<\/td><\/tr>`;
+            tbody.innerHTML += `}。<td>${new Date(s.date).toLocaleDateString()}<\/td> <td><strong>${s.game_nick}<\/strong><\/td> <td>${s.kills}<\/td> <td>${s.kill_percent||0}%<\/td> <td>${s.hs_percent||0}%<\/td> <td>${s.damage?.toLocaleString()}<\/td> <td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}<\/td> <td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}<\/td> <td>${s.verified ? '✅' : '⏳'}<\/td> <td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—'}<\/td><\/tr>`;
         });
     }
     async function deleteMyStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadMyStats(); loadLeaderboard(); showStatus('uploadStatus', '✅ Удалено', 'success'); }
@@ -306,15 +302,14 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НОВАЯ НЕЙРОНКА - ПРЯМОЙ ПОИСК ПО НИКУ ==========
+    // ========== НЕЙРОНКА ==========
     async function findMyStatsInScreenshot() {
-        if (!currentImageData || !currentUser) return null;
+        if (!currentImageData) return null;
+        const nickToFind = getCurrentNick();
+        if (!nickToFind) return null;
         
-        const gameNick = (currentUser.gameNick || currentUser.username).toLowerCase();
-        
-        // Создаём воркер если ещё нет
         if (!ocrWorker) {
-            showStatus('uploadStatus', '🔄 Загрузка нейронки (первый раз может быть долго)...', 'success');
+            showStatus('uploadStatus', '🔄 Загрузка нейронки (первый раз ~10-20 сек)...', 'success');
             ocrWorker = await Tesseract.createWorker('rus', 1, {
                 langPath: 'https://tessdata.projectnaptha.com/5.0.0',
                 corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/tesseract-core.wasm.js'
@@ -323,15 +318,14 @@
                 tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_',
                 tessedit_pageseg_mode: '6'
             });
-            showStatus('uploadStatus', '✅ Нейронка загружена!', 'success');
+            showStatus('uploadStatus', '✅ Нейронка готова!', 'success');
         }
         
         showStatus('uploadStatus', '🔍 Распознавание...', 'success');
         const { data: { text } } = await ocrWorker.recognize(currentImageData);
-        
         const lines = text.split('\n');
         for (let line of lines) {
-            if (line.toLowerCase().includes(gameNick)) {
+            if (line.toLowerCase().includes(nickToFind.toLowerCase())) {
                 const numbers = line.match(/\d+/g);
                 if (numbers && numbers.length >= 4) {
                     return {
@@ -362,6 +356,12 @@
                 currentImageData = ev.target.result;
                 const imgElement = `<img src="${currentImageData}" class="clickable-image" style="max-width:100%; max-height:240px; border-radius: 24px; margin-top:12px; border:1px solid #ffaa33;" onclick="showFullscreenImage('${currentImageData}')">`;
                 document.getElementById('previewImg').innerHTML = imgElement;
+                const nick = getCurrentNick();
+                if (!nick) {
+                    document.getElementById('ocrText').innerHTML = `⚠️ Сначала укажи свой ник в профиле (кнопка "Профиль")`;
+                    document.getElementById('ocrResult').style.display = 'flex';
+                    return;
+                }
                 const stats = await findMyStatsInScreenshot();
                 if (stats) {
                     recognizedStats = stats;
@@ -370,7 +370,7 @@
                     document.getElementById('sendRecognizedBtn').style.display = 'block';
                     showStatus('uploadStatus', '✅ Нажмите "Отправить"', 'success');
                 } else {
-                    document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${currentUser.gameNick || currentUser.username}" в таблице. Попробуйте ручной ввод.`;
+                    document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${nick}" в таблице. Попробуй ручной ввод.`;
                     document.getElementById('ocrResult').style.display = 'flex';
                     document.getElementById('sendRecognizedBtn').style.display = 'none';
                     recognizedStats = null;
@@ -390,7 +390,7 @@
             document.getElementById('sendRecognizedBtn').style.display = 'block';
             showStatus('uploadStatus', '✅ Готово!', 'success');
         } else {
-            document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${currentUser.gameNick || currentUser.username}" в таблице.`;
+            document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${getCurrentNick()}" в таблице.`;
             recognizedStats = null;
             document.getElementById('sendRecognizedBtn').style.display = 'none';
         }
@@ -449,15 +449,15 @@
 
     window.showFullscreenImage = showFullscreenImage;
 
-    const saved = localStorage.getItem('user');
-    if (saved) {
-        currentUser = JSON.parse(saved);
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
         document.getElementById('authModal').style.display = 'none';
         document.getElementById('uploadPanel').style.display = 'block';
         document.getElementById('showAuthBtn').style.display = 'none';
         document.getElementById('userInfo').style.display = 'inline-block';
         document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
-        document.getElementById('profileGameNick').innerText = currentUser.gameNick || currentUser.username;
+        document.getElementById('currentLocalNick').innerText = localNick || currentUser.gameNick || currentUser.username;
         if (currentUser.role === 'admin') document.getElementById('adminTabBtn').style.display = 'inline-block';
         loadLeaderboard(); loadMyStats(); if (currentUser.role === 'admin') loadAdminStats();
     } else loadLeaderboard();
