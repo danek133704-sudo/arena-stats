@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -95,7 +95,7 @@
 
         <div id="leaderboardTab" class="tab-content active">
             <div class="leaderboard-filters"><button class="filter-btn active" onclick="filterLeaderboard('kills')">По убийствам</button><button class="filter-btn" onclick="filterLeaderboard('damage')">По урону</button></div>
-            <table><thead><th>#</th><th>Имя</th><th>Убийства</th><th>Урон</th><th>Видео</th></thead><tbody id="leaderboardBody"><td colspan="5">Загрузка...</td></tbody>`
+             <table><thead><th>#</th><th>Имя</th><th>Убийства</th><th>Урон</th><th>Видео</th></thead><tbody id="leaderboardBody"><td colspan="5">Загрузка...</td></tbody></table>
         </div>
 
         <div id="mystatsTab" class="tab-content">
@@ -107,9 +107,9 @@
             <div style="overflow-x: auto;">
                 <table id="adminStatsTable">
                     <thead>
-                        <tr><th>ID</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Действия</th></tr>
+                        <tr><th>ID</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Действия</th>行政法规
                     </thead>
-                    <tbody id="adminStatsBody"><tr><td colspan="9">Загрузка...</td></tr></tbody>
+                    <tbody id="adminStatsBody">叭<td colspan="9">Загрузка...</td> </tbody>
                 </table>
             </div>
         </div>
@@ -171,8 +171,9 @@ async function login(){
         if(currentUser.role==='admin') {
             document.getElementById('adminTab').style.display='block';
             addDebug('✅ Вы вошли как АДМИНИСТРАТОР');
+            loadAdminStats();
         }
-        loadLeaderboard(); loadMyStats(); if(currentUser.role==='admin') loadAdminStats();
+        loadLeaderboard(); loadMyStats();
     } else document.getElementById('loginStatus').innerHTML=`<div class="status error">❌ ${result.error}</div>`;
 }
 
@@ -207,7 +208,7 @@ function updateLeaderboardDisplay(){
         const cls=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
         tbody.innerHTML+=`<tr class="${cls}"><td><strong>${i+1}</strong></td><td><strong>${p.gameNick||p.username}</strong><br><small>${p.username}</small></td><td>${p.kills}</td><td>${p.damage?.toLocaleString()||0}</td><td>${p.videoLink?`<a href="${p.videoLink}" target="_blank">🎥</a>`:'—'}</td></tr>`;
     });
-    if(sorted.length===0) tbody.innerHTML='<tr><td colspan="5">Нет данных</td></tr>';
+    if(sorted.length===0) tbody.innerHTML='<td colspan="5">Нет данных</td>';
 }
 function filterLeaderboard(type){ currentFilter=type; document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); event.target.classList.add('active'); updateLeaderboardDisplay(); }
 async function loadMyStats(){
@@ -219,7 +220,7 @@ async function loadMyStats(){
     stats.forEach(s=>{
         tbody.innerHTML+=`<tr><td>${new Date(s.date).toLocaleDateString()}</td><td><strong>${s.gameNick||s.username}</strong></td><td>${s.kills}</td><td>${s.killPercent||0}%</td><td>${s.hsPercent||0}%</td><td>${s.damage?.toLocaleString()||0}</td><td>${s.videoLink?`<a href="${s.videoLink}" target="_blank">🎥</a>`:'—'}</td><td>${s.screenshot?`<img src="${s.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${s.screenshot}')">`:'—'}</td><td>${s.verified?'✅':'⏳'}</td></tr>`;
     });
-    if(stats.length===0) tbody.innerHTML='<tr><td colspan="9">Нет данных</td></tr>';
+    if(stats.length===0) tbody.innerHTML='<td colspan="9">Нет данных</td>';
 }
 async function loadAdminStats(){
     if(!currentUser || currentUser.role !== 'admin') return;
