@@ -14,6 +14,7 @@ const pool = new Pool({
 
 async function initDb() {
     try {
+        // Таблица users с discord
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -24,6 +25,8 @@ async function initDb() {
                 role TEXT DEFAULT 'user'
             )
         `);
+        
+        // Таблица stats
         await pool.query(`
             CREATE TABLE IF NOT EXISTS stats (
                 id SERIAL PRIMARY KEY,
@@ -41,10 +44,12 @@ async function initDb() {
             )
         `);
         
-        // Проверяем, есть ли админ
-        const adminCheck = await pool.query('SELECT * FROM users WHERE username = $1', ['admin']);
-        if (adminCheck.rows.length === 0) {
-            // Создаём нового админа с паролем gtafak
+        // Добавляем discord если нет
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS discord TEXT`);
+        
+        // Админ с паролем gtafak
+        const adminExists = await pool.query('SELECT * FROM users WHERE username = $1', ['admin']);
+        if (adminExists.rows.length === 0) {
             const hash = await bcrypt.hash('gtafak', 10);
             await pool.query(
                 'INSERT INTO users (username, password, game_nick, role) VALUES ($1, $2, $3, $4)',
@@ -52,19 +57,18 @@ async function initDb() {
             );
             console.log('✅ Админ создан (admin / gtafak)');
         } else {
-            // Обновляем пароль существующего админа
+            // Обновляем пароль на случай, если он старый
             const hash = await bcrypt.hash('gtafak', 10);
-            await pool.query(
-                'UPDATE users SET password = $1 WHERE username = $2',
-                [hash, 'admin']
-            );
+            await pool.query('UPDATE users SET password = $1 WHERE username = $2', [hash, 'admin']);
             console.log('✅ Пароль админа обновлён на gtafak');
         }
-        console.log('✅ Таблицы готовы');
+        
+        console.log('✅ База готова');
     } catch (err) {
-        console.error('Ошибка инициализации БД:', err);
+        console.error('Ошибка БД:', err);
     }
 }
+
 initDb();
 
 // ========== API ==========
@@ -72,7 +76,9 @@ app.post('/api/register', async (req, res) => {
     try {
         const { username, password, gameNick, discord } = req.body;
         const exist = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
-        if (exist.rows.length > 0) return res.status(400).json({ error: 'Пользователь уже существует' });
+        if (exist.rows.length > 0) {
+            return res.status(400).json({ error: 'Пользователь уже существует' });
+        }
         const hash = await bcrypt.hash(password, 10);
         await pool.query(
             'INSERT INTO users (username, password, game_nick, discord) VALUES ($1, $2, $3, $4)',
@@ -80,7 +86,8 @@ app.post('/api/register', async (req, res) => {
         );
         res.json({ success: true });
     } catch (e) {
-        res.status(500).json({ error: 'Ошибка регистрации' });
+        console.error(e);
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
@@ -88,17 +95,21 @@ app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-        if (result.rows.length === 0) return res.status(400).json({ error: 'Пользователь не найден' });
+        if (result.rows.length === 0) {
+            return res.status(400).json({ error: 'Пользователь не найден' });
+        }
         const user = result.rows[0];
         const match = await bcrypt.compare(password, user.password);
-        if (!match) return res.status(400).json({ error: 'Неверный пароль' });
+        if (!match) {
+            return res.status(400).json({ error: 'Неверный пароль' });
+        }
         res.json({
             success: true,
             user: {
                 id: user.id,
                 username: user.username,
                 gameNick: user.game_nick,
-                discord: user.discord,
+                discord: user.discord || '',
                 role: user.role
             }
         });
@@ -174,6 +185,6 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`✅ Сервер на порту ${PORT}`);
+    console.log(`✅ Сервер запущен на порту ${PORT}`);
     console.log(`👑 Админ: admin / gtafak`);
 });
