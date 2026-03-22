@@ -93,15 +93,15 @@
         <div id="leaderboardTab" class="tab-content active">
             <div class="search-box"><input type="text" id="searchPlayer" placeholder="🔍 Поиск игрока..." onkeyup="filterLeaderboardByNick()"></div>
             <div class="leaderboard-filters"><button class="filter-btn active" onclick="filterLeaderboard('kills')">По убийствам</button><button class="filter-btn" onclick="filterLeaderboard('damage')">По урону</button></div>
-            <table><thead><tr><th>#</th><th>Имя</th><th>Убийства</th><th>Урон</th><th>Видео</th></tr></thead><tbody id="leaderboardBody"><tr><td colspan="5">Загрузка...</td></tr></tbody></table>
+            <table><thead><th>#</th><th>Имя</th><th>Убийства</th><th>Урон</th><th>Видео</th></thead><tbody id="leaderboardBody"><td colspan="5">Загрузка...</td></tbody></table>
         </div>
 
         <div id="mystatsTab" class="tab-content">
-            <table><thead><tr><th>Дата</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Статус</th></tr></thead><tbody id="myStatsBody"><tr><td colspan="9">Загрузка...</td></tr></tbody></table>
+            <table><thead><th>Дата</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Статус</th></thead><tbody id="myStatsBody"><td colspan="9">Загрузка...</td></tbody></table>
         </div>
 
         <div id="adminTabContent" class="tab-content">
-            <table><thead><tr><th>ID</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Действия</th></tr></thead><tbody id="adminStatsBody"><tr><td colspan="9">Загрузка...</td></tr></tbody></table>
+            <table><thead><th>ID</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Действия</th></thead><tbody id="adminStatsBody"><td colspan="9">Загрузка...</td></tbody></table>
         </div>
     </div>
 </div>
@@ -190,7 +190,7 @@ function updateLeaderboardDisplay(){
         const cls=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
         tbody.innerHTML+=`<tr class="${cls}"><td><strong>${i+1}</strong></td><td><strong>${p.gameNick||p.username}</strong><br><small>${p.username}</small></td><td>${p.kills}</td><td>${p.damage?.toLocaleString()||0}</td><td>${p.videoLink?`<a href="${p.videoLink}" target="_blank">🎥</a>`:'—'}</td></tr>`;
     });
-    if(sorted.length===0) tbody.innerHTML='<tr><td colspan="5">Нет данных</td></tr>';
+    if(sorted.length===0) tbody.innerHTML='<td colspan="5">Нет данных</td>';
 }
 function filterLeaderboard(type){ currentFilter=type; document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); event.target.classList.add('active'); updateLeaderboardDisplay(); }
 async function loadMyStats(){
@@ -202,19 +202,32 @@ async function loadMyStats(){
     stats.forEach(s=>{
         tbody.innerHTML+=`<tr><td>${new Date(s.date).toLocaleDateString()}</td><td><strong>${s.gameNick||s.username}</strong></td><td>${s.kills}</td><td>${s.killPercent||0}%</td><td>${s.damagePercent||0}%</td><td>${s.damage?.toLocaleString()||0}</td><td>${s.videoLink?`<a href="${s.videoLink}" target="_blank">🎥</a>`:'—'}</td><td>${s.screenshot?`<img src="${s.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${s.screenshot}')">`:'—'}</td><td>${s.verified?'<span class="verified-badge">✅</span>':'<span class="pending-badge">⏳</span>'}</td></tr>`;
     });
-    if(stats.length===0) tbody.innerHTML='<tr><td colspan="9">Нет данных</td></tr>';
+    if(stats.length===0) tbody.innerHTML='<td colspan="9">Нет данных</td>';
 }
 async function loadAdminStats(){
-    if(!currentUser||currentUser.role!=='admin') return;
-    const res=await fetch('/api/stats/all');
-    const stats=await res.json();
-    const tbody=document.getElementById('adminStatsBody');
-    tbody.innerHTML='';
-    const unverified=stats.filter(s=>!s.verified);
-    unverified.forEach(s=>{
-        tbody.innerHTML+=`<tr><td>${s.id}</td><td><strong>${s.gameNick||s.username}</strong><br><small>${s.username}</small></td><td>${s.kills}</td><td>${s.killPercent||0}%</td><td>${s.damagePercent||0}%</td><td>${s.damage?.toLocaleString()||0}</td><td>${s.videoLink?`<a href="${s.videoLink}" target="_blank">🎥</a>`:'—'}</td><td>${s.screenshot?`<img src="${s.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${s.screenshot}')">`:'—'}</td><td><button class="verify-btn" onclick="verifyStat(${s.id})">✅</button><button class="delete-btn" onclick="deleteStat(${s.id})">🗑️</button></td></tr>`;
-    });
-    if(unverified.length===0) tbody.innerHTML='<tr><td colspan="9">Нет неподтвержденной статистики</td></tr>';
+    if(!currentUser || currentUser.role !== 'admin') {
+        console.log('Не админ или не залогинен');
+        return;
+    }
+    try {
+        const res=await fetch('/api/stats/all');
+        const stats=await res.json();
+        console.log('Всего статистик:', stats.length);
+        const unverified=stats.filter(s=>!s.verified);
+        console.log('Неподтверждённых:', unverified.length);
+        const tbody=document.getElementById('adminStatsBody');
+        tbody.innerHTML='';
+        if(unverified.length===0){
+            tbody.innerHTML='<td colspan="9">Нет неподтвержденной статистики</td>';
+            return;
+        }
+        unverified.forEach(s=>{
+            tbody.innerHTML+=`<tr><td>${s.id}</td><td><strong>${s.gameNick||s.username}</strong><br><small>${s.username}</small></td><td>${s.kills}</td><td>${s.killPercent||0}%</td><td>${s.damagePercent||0}%</td><td>${s.damage?.toLocaleString()||0}</td><td>${s.videoLink?`<a href="${s.videoLink}" target="_blank">🎥</a>`:'—'}</td><td>${s.screenshot?`<img src="${s.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${s.screenshot}')">`:'—'}</td><td><button class="verify-btn" onclick="verifyStat(${s.id})">✅</button><button class="delete-btn" onclick="deleteStat(${s.id})">🗑️</button></td></tr>`;
+        });
+    } catch(e) {
+        console.error('Ошибка загрузки админ-панели:', e);
+        document.getElementById('adminStatsBody').innerHTML='<td colspan="9">Ошибка загрузки</td>';
+    }
 }
 async function verifyStat(id){ const res=await fetch(`/api/stats/${id}/verify`,{method:'PUT'}); if(res.ok){ loadAdminStats(); loadLeaderboard(); loadMyStats(); } }
 async function deleteStat(id){ if(!confirm('Удалить?')) return; const res=await fetch(`/api/stats/${id}`,{method:'DELETE'}); if(res.ok){ loadAdminStats(); loadLeaderboard(); loadMyStats(); } }
@@ -248,7 +261,7 @@ async function analyzeAndSubmit(){
                 currentImage=null; document.getElementById('fileInput').value=''; document.getElementById('imagePreview').innerHTML=''; document.getElementById('videoLink').value='';
                 loadLeaderboard(); loadMyStats(); if(currentUser.role==='admin') loadAdminStats();
             } else showStatus('uploadStatus','❌ Ошибка отправки','error');
-        } else showStatus('uploadStatus','❌ Не найдено 4 числа (убийства, %, HS%, урон)','error');
+        } else showStatus('uploadStatus','❌ Не найдено 4 числа','error');
     } catch(e){ console.error(e); showStatus('uploadStatus','❌ Ошибка распознавания','error'); }
 }
 function showStatus(id,msg,type){ const el=document.getElementById(id); if(el){ el.innerHTML=`<div class="status ${type}">${msg}</div>`; setTimeout(()=>el.innerHTML='',3000); } }
