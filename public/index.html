@@ -240,6 +240,14 @@
             transform: scale(1.05);
             box-shadow: 0 0 8px #ffaa33;
         }
+        .clickable-image {
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .clickable-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(255, 170, 51, 0.5);
+        }
         .profile-menu { position: relative; display: inline-block; }
         .profile-dropdown {
             position: absolute;
@@ -350,7 +358,7 @@
             <p>Нажми или перетащи скриншот с таблицей статистики</p>
             <input type="file" id="fileInput" hidden accept="image/*">
         </div>
-        <div id="previewImg" style="text-align: center;"></div>
+        <div id="previewImg" style="text-align: center; cursor: pointer;"></div>
         <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео (YouTube/Twitch)">
         <div id="ocrResult" class="ocr-highlight" style="display: none;">
             <b>🔍 Найдено для вашего ника:</b> <span id="ocrText"></span>
@@ -407,6 +415,17 @@
     let currentImageData = null;
     let allLeaderboardData = [];
     let foundStats = null;
+
+    // Функция для нечёткого поиска (сравнивает строки с учётом похожих символов)
+    function fuzzyMatch(str1, str2) {
+        const s1 = str1.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        const s2 = str2.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        if (s1 === s2) return true;
+        if (s1.includes(s2) || s2.includes(s1)) return true;
+        // Проверка на замену l -> I, I -> l, O -> 0 и т.д.
+        const normalize = (s) => s.replace(/l/g, 'i').replace(/I/g, 'i').replace(/0/g, 'o').replace(/O/g, 'o');
+        return normalize(s1) === normalize(s2);
+    }
 
     async function compressImage(base64, maxWidth=800, quality=0.6) {
         return new Promise((resolve) => {
@@ -519,7 +538,7 @@
             if (idx === 0) cls = 'rank-1';
             if (idx === 1) cls = 'rank-2';
             if (idx === 2) cls = 'rank-3';
-            tbody.innerHTML += `<tr class="${cls}"><td><b>${idx+1}</b></td><td><b>${p.game_nick || p.username}</b><br><small>${p.username}</small></td><td>${p.kills}</td><td>${p.damage?.toLocaleString()}</td><td>${p.video_link ? `<a href="${p.video_link}" target="_blank">🎥</a>` : '—'}</td></tr>`;
+            tbody.innerHTML += `<tr class="${cls}">}<b>${idx+1}</b> <b>${p.game_nick || p.username}</b><br><small>${p.username}</small> ${p.kills} ${p.damage?.toLocaleString()} ${p.video_link ? `<a href="${p.video_link}" target="_blank">🎥</a>` : '—'} `;
         });
     }
 
@@ -597,7 +616,7 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div style="cursor:pointer; text-align:center"><img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;"></div>`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НЕЙРОНКА С ПОИСКОМ ПО НИКУ ==========
+    // ========== НЕЙРОНКА С НЕЧЁТКИМ ПОИСКОМ ==========
     async function findMyStatsInScreenshot() {
         if (!currentImageData || !currentUser) return null;
         const { data: { text } } = await Tesseract.recognize(currentImageData, 'rus+eng', {
@@ -605,23 +624,36 @@
             tessedit_pageseg_mode: 6
         });
         
-        const gameNick = (currentUser.gameNick || currentUser.username).toLowerCase();
+        const gameNick = currentUser.gameNick || currentUser.username;
         const lines = text.split('\n');
         
         for (let line of lines) {
-            if (line.toLowerCase().includes(gameNick)) {
-                const numbers = line.match(/\d+/g);
-                if (numbers && numbers.length >= 4) {
-                    return {
-                        kills: parseInt(numbers[0]),
-                        killPercent: parseFloat(numbers[1]),
-                        hsPercent: parseFloat(numbers[2]),
-                        damage: parseInt(numbers[3])
-                    };
+            // Ищем в строке любое слово, похожее на ник
+            const words = line.split(/[^a-zA-Z0-9_]+/);
+            for (let word of words) {
+                if (word.length > 3 && fuzzyMatch(word, gameNick)) {
+                    const numbers = line.match(/\d+/g);
+                    if (numbers && numbers.length >= 4) {
+                        console.log(`Найдено в строке: ${line}`);
+                        return {
+                            kills: parseInt(numbers[0]),
+                            killPercent: parseFloat(numbers[1]),
+                            hsPercent: parseFloat(numbers[2]),
+                            damage: parseInt(numbers[3])
+                        };
+                    }
                 }
             }
         }
         return null;
+    }
+
+    function showFullscreenImage(src) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `<img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px; cursor: pointer;">`;
+        modal.onclick = () => modal.remove();
+        document.body.appendChild(modal);
     }
 
     document.getElementById('fileInput').onchange = async (e) => {
@@ -630,7 +662,8 @@
             const r = new FileReader();
             r.onload = async (ev) => {
                 currentImageData = ev.target.result;
-                document.getElementById('previewImg').innerHTML = `<img src="${currentImageData}" style="max-width:100%; max-height:240px; border-radius: 24px; margin-top:12px; border:1px solid #ffaa33;">`;
+                const imgElement = `<img src="${currentImageData}" class="clickable-image" style="max-width:100%; max-height:240px; border-radius: 24px; margin-top:12px; border:1px solid #ffaa33;" onclick="showFullscreenImage('${currentImageData}')">`;
+                document.getElementById('previewImg').innerHTML = imgElement;
                 showStatus('uploadStatus', '🔍 Поиск вашего ника в таблице...', 'success');
                 const stats = await findMyStatsInScreenshot();
                 if (stats) {
@@ -658,7 +691,7 @@
             document.getElementById('ocrResult').style.display = 'block';
             showStatus('uploadStatus', '✅ Готово к отправке', 'success');
         } else {
-            document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${currentUser.gameNick || currentUser.username}" в таблице.`;
+            document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${currentUser.gameNick || currentUser.username}" в таблице. Попробуйте другой скриншот.`;
             foundStats = null;
         }
     }
@@ -695,6 +728,8 @@
             } else showStatus('uploadStatus', '❌ Ошибка отправки', 'error');
         } catch(e) { console.error(e); showStatus('uploadStatus', '❌ Ошибка', 'error'); }
     }
+
+    window.showFullscreenImage = showFullscreenImage;
 
     // инициализация
     const saved = localStorage.getItem('user');
