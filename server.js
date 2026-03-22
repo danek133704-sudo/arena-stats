@@ -1,170 +1,335 @@
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const app = express();
-const PORT = process.env.PORT || 3000;
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arena Stats</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: #0a0a0a; color: #ffd966; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; border-bottom: 2px solid #ffd966; padding-bottom: 15px; }
+        h1 { background: linear-gradient(135deg, #ffd966, #ffb347); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .contact-info { background: #1a1a1a; padding: 8px 15px; border-radius: 20px; font-size: 14px; }
+        .contact-info a { color: #ffd966; text-decoration: none; font-weight: bold; }
+        button, .btn { background: linear-gradient(135deg, #ffd966, #ffb347); border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; color: #1a1a1a; margin: 5px; }
+        .btn-outline { background: transparent; border: 1px solid #ffd966; color: #ffd966; }
+        .card { background: #1a1a1a; border: 1px solid #ffd966; border-radius: 20px; padding: 25px; margin-bottom: 30px; }
+        .upload-area { border: 3px dashed #ffd966; border-radius: 15px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-area:hover { background: #2c2c2c; }
+        input { width: 100%; padding: 12px; background: #2c2c2c; border: 1px solid #444; border-radius: 8px; color: #ffd966; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        th { color: #ffd966; background: #2c2c2c; }
+        tr:hover { background: #2c2c2c; }
+        .rank-1 { background: #ffd96622; border-left: 3px solid #ffd966; }
+        .rank-2 { background: #c0c0c022; border-left: 3px solid #c0c0c0; }
+        .rank-3 { background: #cd7f3222; border-left: 3px solid #cd7f32; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #333; flex-wrap: wrap; }
+        .tab { padding: 10px 20px; cursor: pointer; color: #888; }
+        .tab.active { color: #ffd966; border-bottom: 2px solid #ffd966; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .status { margin-top: 10px; padding: 10px; border-radius: 8px; text-align: center; }
+        .success { background: #4caf5022; color: #4caf50; border: 1px solid #4caf50; }
+        .error { background: #f4433622; color: #f44336; border: 1px solid #f44336; }
+        .screenshot-thumb { max-width: 60px; cursor: pointer; border-radius: 5px; border: 1px solid #ffd966; }
+        .screenshot-preview { max-width: 100%; max-height: 200px; margin-top: 10px; border-radius: 8px; display: block; margin: 10px auto; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; cursor: pointer; }
+        .modal img { max-width: 90%; max-height: 90%; }
+        .verify-btn { background: #4caf50; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-right: 5px; }
+        .delete-btn { background: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .leaderboard-filters { display: flex; gap: 10px; margin-bottom: 20px; }
+        .filter-btn { padding: 5px 15px; background: #2c2c2c; border: none; color: #ffd966; border-radius: 15px; cursor: pointer; }
+        .filter-btn.active { background: #ffd966; color: #1a1a1a; }
+        .profile-menu { position: relative; display: inline-block; }
+        .profile-dropdown { position: absolute; right: 0; top: 100%; background: #1a1a1a; border: 1px solid #ffd966; border-radius: 10px; padding: 15px; min-width: 250px; z-index: 100; margin-top: 5px; }
+        .extracted-data { background: #2c2c2c; padding: 15px; border-radius: 10px; margin-top: 15px; border-left: 3px solid #ffd966; }
+        .debug-panel { background: #2c2c2c; padding: 10px; margin-top: 20px; border-radius: 10px; font-size: 12px; color: #888; max-height: 200px; overflow: auto; }
+        @media (max-width: 700px) { th, td { font-size: 12px; padding: 8px; } .header { flex-direction: column; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div><h1>⚔️ ARENA STATS</h1><p>Трекер статистики • Общий лидерборд</p></div>
+        <div class="contact-info">📱 Сотрудничество: <a href="https://t.me/flikfak" target="_blank">@flikfak</a> (Telegram)</div>
+        <div id="authButtons"><button onclick="showAuthModal()">🔐 Вход / Регистрация</button></div>
+        <div id="userInfo" style="display: none;"><span id="userName"></span>
+            <div class="profile-menu" style="margin-left: 15px;">
+                <button class="btn-outline" onclick="toggleProfileDropdown()">👤 Профиль</button>
+                <div id="profileDropdown" class="profile-dropdown" style="display: none;">
+                    <p><strong>Discord:</strong> <span id="profileDiscord">—</span></p>
+                    <p><strong>Игровой ник:</strong> <span id="profileGameNick">—</span></p>
+                    <button class="btn" onclick="openEditModal()">✏️ Редактировать</button>
+                    <button class="btn-outline" onclick="logout()">🚪 Выйти</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.static('public'));
+    <div id="authModal" class="card" style="display: none;">
+        <div class="tabs"><div class="tab active" onclick="switchAuthTab('login')">Вход</div><div class="tab" onclick="switchAuthTab('register')">Регистрация</div></div>
+        <div id="loginForm"><input type="text" id="loginUsername" placeholder="Логин"><input type="password" id="loginPassword" placeholder="Пароль"><button onclick="login()">Войти</button><div id="loginStatus" class="status"></div></div>
+        <div id="registerForm" style="display: none;"><input type="text" id="regUsername" placeholder="Логин"><input type="password" id="regPassword" placeholder="Пароль"><input type="text" id="regGameNick" placeholder="Ник в игре"><input type="text" id="regDiscord" placeholder="Discord"><button onclick="register()">Зарегистрироваться</button><div id="regStatus" class="status"></div></div>
+    </div>
 
-const DATA_FILE = path.join(__dirname, 'data.json');
+    <div id="uploadSection" class="card" style="display: none;">
+        <h2>📊 Загрузить статистику</h2>
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()"><div style="font-size:48px;">📸</div><p>Нажмите или перетащите скриншот</p><input type="file" id="fileInput" style="display:none;" accept="image/*"></div>
+        <div id="imagePreview" style="text-align:center;"></div>
+        <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео">
+        <div id="extractedData" class="extracted-data" style="display:none;">
+            <h4>📋 Распознанные данные:</h4>
+            <p><strong>Убийства:</strong> <span id="extractedKills"></span></p>
+            <p><strong>% убийств:</strong> <span id="extractedKillPercent"></span></p>
+            <p><strong>HS %:</strong> <span id="extractedHSPercent"></span></p>
+            <p><strong>Урон:</strong> <span id="extractedDamage"></span></p>
+        </div>
+        <button onclick="analyzeAndSubmit()">📤 Отправить статистику</button>
+        <div id="uploadStatus" class="status"></div>
+    </div>
 
-let data = { users: [], stats: [] };
+    <div class="card">
+        <div class="tabs"><div class="tab active" onclick="switchMainTab('leaderboard')">🏆 Лидерборд</div><div class="tab" onclick="switchMainTab('mystats')">📊 Моя статистика</div><div class="tab" id="adminTab" style="display:none;" onclick="switchMainTab('admin')">🔧 Админ-панель</div></div>
 
-function loadData() {
-    try {
-        if (fs.existsSync(DATA_FILE)) {
-            data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-            console.log(`📁 Загружено: ${data.users.length} пользователей, ${data.stats.length} записей`);
+        <div id="leaderboardTab" class="tab-content active">
+            <div class="leaderboard-filters"><button class="filter-btn active" onclick="filterLeaderboard('kills')">По убийствам</button><button class="filter-btn" onclick="filterLeaderboard('damage')">По урону</button></div>
+            <table><thead><th>#</th><th>Имя</th><th>Убийства</th><th>Урон</th><th>Видео</th></thead><tbody id="leaderboardBody"><td colspan="5">Загрузка...</td></tbody></table>
+        </div>
+
+        <div id="mystatsTab" class="tab-content">
+            <table><thead><th>Дата</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Статус</th></thead><tbody id="myStatsBody"><td colspan="9">Загрузка...</td></tbody></table>
+        </div>
+
+        <div id="adminTabContent" class="tab-content">
+            <div id="adminDebug" class="debug-panel" style="margin-bottom: 10px;">🟡 Ожидание загрузки...</div>
+            <table><thead><th>ID</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Действия</th></thead><tbody id="adminStatsBody"><td colspan="9">Загрузка...</td></tbody></table>
+        </div>
+    </div>
+</div>
+
+<div id="editModal" class="modal" style="display:none;"><div class="card" style="max-width:400px;"><h3>✏️ Редактировать профиль</h3><input type="text" id="editDiscord" placeholder="Discord"><input type="text" id="editGameNick" placeholder="Ник в игре"><button onclick="saveProfileEdit()">Сохранить</button><button class="btn-outline" onclick="closeEditModal()">Отмена</button></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script>
+let currentUser = null, leaderboardData = [], currentFilter = 'kills', currentImage = null;
+
+function addDebug(msg) {
+    const debugDiv = document.getElementById('adminDebug');
+    if (debugDiv) {
+        debugDiv.innerHTML += `<div>${new Date().toLocaleTimeString()} - ${msg}</div>`;
+        debugDiv.scrollTop = debugDiv.scrollHeight;
+    }
+    console.log(msg);
+}
+
+function compressImage(base64, maxWidth=800, quality=0.6) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let w = img.width, h = img.height;
+            if (w > maxWidth) { h = (h * maxWidth) / w; w = maxWidth; }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = base64;
+    });
+}
+
+async function register(){
+    const data={username:document.getElementById('regUsername').value,password:document.getElementById('regPassword').value,gameNick:document.getElementById('regGameNick').value,discord:document.getElementById('regDiscord').value};
+    const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const result=await res.json();
+    if(res.ok){ document.getElementById('regStatus').innerHTML='<div class="status success">✅ Регистрация успешна! Войдите.</div>'; switchAuthTab('login'); }
+    else document.getElementById('regStatus').innerHTML=`<div class="status error">❌ ${result.error}</div>`;
+}
+
+async function login(){
+    const data={username:document.getElementById('loginUsername').value,password:document.getElementById('loginPassword').value};
+    const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const result=await res.json();
+    if(res.ok){
+        currentUser=result.user;
+        localStorage.setItem('user',JSON.stringify(currentUser));
+        document.getElementById('authModal').style.display='none';
+        document.getElementById('uploadSection').style.display='block';
+        document.getElementById('authButtons').style.display='none';
+        document.getElementById('userInfo').style.display='block';
+        document.getElementById('userName').innerHTML=`👤 ${currentUser.username}`;
+        document.getElementById('profileDiscord').innerText=currentUser.discord||'Не указан';
+        document.getElementById('profileGameNick').innerText=currentUser.gameNick||currentUser.username;
+        if(currentUser.role==='admin') {
+            document.getElementById('adminTab').style.display='block';
+            addDebug('✅ Вы вошли как АДМИНИСТРАТОР');
         } else {
-            data = {
-                users: [{ id: 1, username: 'admin', password: 'admin123', gameNick: 'Admin', role: 'admin' }],
-                stats: []
-            };
-            saveData();
-            console.log('📁 Создан новый файл данных');
+            addDebug('👤 Вы вошли как обычный пользователь');
         }
-    } catch(e) { console.error('Ошибка загрузки:', e); }
+        loadLeaderboard(); loadMyStats(); if(currentUser.role==='admin') loadAdminStats();
+    } else document.getElementById('loginStatus').innerHTML=`<div class="status error">❌ ${result.error}</div>`;
 }
 
-function saveData() {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    console.log('💾 Данные сохранены');
+function logout(){ currentUser=null; localStorage.removeItem('user'); location.reload(); }
+function toggleProfileDropdown(){ const d=document.getElementById('profileDropdown'); d.style.display=d.style.display==='none'?'block':'none'; }
+function openEditModal(){ document.getElementById('editDiscord').value=currentUser?.discord||''; document.getElementById('editGameNick').value=currentUser?.gameNick||''; document.getElementById('editModal').style.display='flex'; }
+function closeEditModal(){ document.getElementById('editModal').style.display='none'; }
+async function saveProfileEdit(){
+    const discord=document.getElementById('editDiscord').value, gameNick=document.getElementById('editGameNick').value;
+    const res=await fetch('/api/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:currentUser.username,discord,gameNick})});
+    if(res.ok){
+        const result=await res.json();
+        currentUser.discord=result.user.discord; currentUser.gameNick=result.user.gameNick;
+        localStorage.setItem('user',JSON.stringify(currentUser));
+        document.getElementById('profileDiscord').innerText=currentUser.discord||'Не указан';
+        document.getElementById('profileGameNick').innerText=currentUser.gameNick||currentUser.username;
+        closeEditModal();
+        showStatus('uploadStatus','✅ Профиль обновлен!','success');
+    } else showStatus('uploadStatus','❌ Ошибка','error');
 }
-
-loadData();
-
-// Регистрация
-app.post('/api/register', (req, res) => {
-    const { username, password, gameNick, discord } = req.body;
-    if (data.users.find(u => u.username === username)) {
-        return res.status(400).json({ error: 'Пользователь уже существует' });
-    }
-    const role = username === 'admin' ? 'admin' : 'user';
-    data.users.push({
-        id: Date.now(),
-        username,
-        password,
-        gameNick: gameNick || username,
-        discord: discord || '',
-        role: role
+function showAuthModal(){ const m=document.getElementById('authModal'); m.style.display=m.style.display==='none'?'block':'none'; }
+function switchAuthTab(tab){ document.getElementById('loginForm').style.display=tab==='login'?'block':'none'; document.getElementById('registerForm').style.display=tab==='register'?'block':'none'; }
+function switchMainTab(tab){ document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); document.getElementById(tab+'Tab').classList.add('active'); }
+async function loadLeaderboard(){ const res=await fetch('/api/leaderboard'); leaderboardData=await res.json(); updateLeaderboardDisplay(); }
+function updateLeaderboardDisplay(){
+    let sorted = [...leaderboardData];
+    if(currentFilter==='kills') sorted.sort((a,b)=>b.kills-a.kills);
+    else sorted.sort((a,b)=>b.damage-a.damage);
+    const tbody=document.getElementById('leaderboardBody');
+    tbody.innerHTML='';
+    sorted.slice(0,50).forEach((p,i)=>{
+        const cls=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+        tbody.innerHTML+=`<tr class="${cls}">}<td><strong>${i+1}</strong></td><td><strong>${p.gameNick||p.username}</strong><br><small>${p.username}</small></td><td>${p.kills}</td><td>${p.damage?.toLocaleString()||0}</td><td>${p.videoLink?`<a href="${p.videoLink}" target="_blank">🎥</a>`:'—'}</td></tr>`;
     });
-    saveData();
-    console.log(`✅ Зарегистрирован: ${username} (${role})`);
-    res.json({ success: true });
-});
-
-// Вход
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    const user = data.users.find(u => u.username === username && u.password === password);
-    if (!user) return res.status(400).json({ error: 'Неверный логин или пароль' });
-    console.log(`🔐 Вход: ${username} (${user.role})`);
-    res.json({
-        success: true,
-        user: {
-            id: user.id,
-            username: user.username,
-            gameNick: user.gameNick,
-            discord: user.discord,
-            role: user.role
+    if(sorted.length===0) tbody.innerHTML='<td colspan="5">Нет данных</td>';
+}
+function filterLeaderboard(type){ currentFilter=type; document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); event.target.classList.add('active'); updateLeaderboardDisplay(); }
+async function loadMyStats(){
+    if(!currentUser) return;
+    const res=await fetch('/api/stats/my',{headers:{'username':currentUser.username}});
+    const stats=await res.json();
+    const tbody=document.getElementById('myStatsBody');
+    tbody.innerHTML='';
+    stats.forEach(s=>{
+        tbody.innerHTML+=`<tr><td>${new Date(s.date).toLocaleDateString()}</td><td><strong>${s.gameNick||s.username}</strong></td><td>${s.kills}</td><td>${s.killPercent||0}%</td><td>${s.hsPercent||0}%</td><td>${s.damage?.toLocaleString()||0}</td><td>${s.videoLink?`<a href="${s.videoLink}" target="_blank">🎥</a>`:'—'}</td><td>${s.screenshot?`<img src="${s.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${s.screenshot}')">`:'—'}</td><td>${s.verified?'✅':'⏳'}</td></tr>`;
+    });
+    if(stats.length===0) tbody.innerHTML='<td colspan="9">Нет данных</td>';
+}
+async function loadAdminStats(){
+    if(!currentUser || currentUser.role !== 'admin') {
+        addDebug('❌ Не удалось загрузить админ-панель: недостаточно прав');
+        return;
+    }
+    addDebug('🔄 Загрузка админ-панели...');
+    try {
+        const res=await fetch('/api/stats/all');
+        const stats=await res.json();
+        addDebug(`📊 Получено ${stats.length} записей из базы`);
+        const unverified=stats.filter(s=>!s.verified);
+        addDebug(`⏳ Из них неподтверждённых: ${unverified.length}`);
+        const tbody=document.getElementById('adminStatsBody');
+        tbody.innerHTML='';
+        if(unverified.length===0){
+            tbody.innerHTML='<td colspan="9">✅ Нет неподтвержденной статистики</td>';
+            addDebug('✅ Нет неподтверждённых записей');
+            return;
         }
-    });
-});
-
-// Обновить профиль
-app.put('/api/profile', (req, res) => {
-    const { username, discord, gameNick } = req.body;
-    const user = data.users.find(u => u.username === username);
-    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
-    if (discord !== undefined) user.discord = discord;
-    if (gameNick !== undefined) user.gameNick = gameNick;
-    saveData();
-    res.json({ success: true, user: { username: user.username, discord: user.discord, gameNick: user.gameNick, role: user.role } });
-});
-
-// Добавить статистику
-app.post('/api/stats', (req, res) => {
-    const { username, kills, killPercent, hsPercent, damage, videoLink, screenshot } = req.body;
-    const user = data.users.find(u => u.username === username);
-    const isAdmin = user?.role === 'admin';
-    
-    const newStat = {
-        id: Date.now(),
-        username,
-        gameNick: user?.gameNick || username,
-        kills: kills || 0,
-        killPercent: killPercent || 0,
-        hsPercent: hsPercent || 0,
-        damage: damage || 0,
-        videoLink: videoLink || '',
-        screenshot: screenshot || '',
-        verified: isAdmin ? true : false,
-        date: new Date().toISOString()
-    };
-    data.stats.push(newStat);
-    saveData();
-    console.log(`📊 Статистика от ${username}: убийства=${kills}, %=${killPercent}%, HS%=${hsPercent}%, урон=${damage}`);
-    res.json({ success: true, stat: newStat });
-});
-
-// Моя статистика
-app.get('/api/stats/my', (req, res) => {
-    const username = req.headers.username;
-    const myStats = data.stats.filter(s => s.username === username);
-    res.json(myStats);
-});
-
-// Вся статистика (для админа)
-app.get('/api/stats/all', (req, res) => {
-    console.log(`📋 Запрос всех статистик: всего ${data.stats.length}`);
-    console.log(`📋 Неподтверждённых: ${data.stats.filter(s => !s.verified).length}`);
-    res.json(data.stats);
-});
-
-// Подтвердить статистику
-app.put('/api/stats/:id/verify', (req, res) => {
-    const stat = data.stats.find(s => s.id == req.params.id);
-    if (stat) {
-        stat.verified = true;
-        saveData();
-        console.log(`✅ Подтверждена запись ${req.params.id}`);
+        unverified.forEach(s=>{
+            tbody.innerHTML+=`<tr><td>${s.id}</td><td><strong>${s.gameNick||s.username}</strong><br><small>${s.username}</small></td><td>${s.kills}</td><td>${s.killPercent||0}%</td><td>${s.hsPercent||0}%</td><td>${s.damage?.toLocaleString()||0}</td><td>${s.videoLink?`<a href="${s.videoLink}" target="_blank">🎥</a>`:'—'}</td><td>${s.screenshot?`<img src="${s.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${s.screenshot}')">`:'—'}</td><td><button class="verify-btn" onclick="verifyStat(${s.id})">✅</button><button class="delete-btn" onclick="deleteStat(${s.id})">🗑️</button></td></tr>`;
+        });
+        addDebug(`✅ Отображено ${unverified.length} записей в админ-панели`);
+    } catch(e) { 
+        addDebug(`❌ Ошибка загрузки админ-панели: ${e.message}`);
+        console.error(e);
     }
-    res.json({ success: true });
-});
-
-// Удалить статистику
-app.delete('/api/stats/:id', (req, res) => {
-    data.stats = data.stats.filter(s => s.id != req.params.id);
-    saveData();
-    console.log(`🗑️ Удалена запись ${req.params.id}`);
-    res.json({ success: true });
-});
-
-// Лидерборд
-app.get('/api/leaderboard', (req, res) => {
-    const leaderboard = {};
-    data.stats.forEach(stat => {
-        if (!stat.verified) return;
-        if (!leaderboard[stat.username]) {
-            leaderboard[stat.username] = {
-                username: stat.username,
-                gameNick: stat.gameNick,
-                kills: 0,
-                damage: 0
+}
+async function verifyStat(id){ 
+    addDebug(`🔧 Подтверждение записи ${id}...`);
+    const res=await fetch(`/api/stats/${id}/verify`,{method:'PUT'}); 
+    if(res.ok){ 
+        addDebug(`✅ Запись ${id} подтверждена`);
+        loadAdminStats(); loadLeaderboard(); loadMyStats(); 
+    } else addDebug(`❌ Ошибка подтверждения записи ${id}`);
+}
+async function deleteStat(id){ 
+    if(!confirm('Удалить?')) return;
+    addDebug(`🗑️ Удаление записи ${id}...`);
+    const res=await fetch(`/api/stats/${id}`,{method:'DELETE'}); 
+    if(res.ok){ 
+        addDebug(`✅ Запись ${id} удалена`);
+        loadAdminStats(); loadLeaderboard(); loadMyStats(); 
+    } else addDebug(`❌ Ошибка удаления записи ${id}`);
+}
+function showScreenshot(src){ const modal=document.createElement('div'); modal.className='modal'; modal.innerHTML=`<img src="${src}">`; modal.onclick=()=>modal.remove(); document.body.appendChild(modal); }
+document.getElementById('fileInput').onchange=(e)=>{
+    const file=e.target.files[0];
+    if(file){ const reader=new FileReader(); reader.onload=async (e)=>{ currentImage=e.target.result; document.getElementById('imagePreview').innerHTML=`<img src="${currentImage}" class="screenshot-preview">`; showStatus('uploadStatus','✅ Изображение загружено','success'); }; reader.readAsDataURL(file); }
+};
+async function analyzeAndSubmit(){
+    if(!currentUser){ alert('Сначала войдите'); return; }
+    if(!currentImage){ alert('Выберите изображение'); return; }
+    showStatus('uploadStatus','🔍 Анализ...','success');
+    try{
+        const { data: { text } } = await Tesseract.recognize(currentImage, 'rus+eng');
+        const numbers = text.match(/\d+/g);
+        if(numbers && numbers.length >= 4){
+            const kills = parseInt(numbers[0]);
+            const killPercent = parseFloat(numbers[1]);
+            const hsPercent = parseFloat(numbers[2]);
+            const damage = parseInt(numbers[3]);
+            
+            document.getElementById('extractedKills').innerText = kills;
+            document.getElementById('extractedKillPercent').innerText = killPercent+'%';
+            document.getElementById('extractedHSPercent').innerText = hsPercent+'%';
+            document.getElementById('extractedDamage').innerText = damage;
+            document.getElementById('extractedData').style.display='block';
+            
+            const compressed = await compressImage(currentImage, 800, 0.6);
+            const statData = {
+                username: currentUser.username,
+                kills: kills,
+                killPercent: killPercent,
+                hsPercent: hsPercent,
+                damage: damage,
+                videoLink: document.getElementById('videoLink').value,
+                screenshot: compressed
             };
-        }
-        leaderboard[stat.username].kills += stat.kills;
-        leaderboard[stat.username].damage += stat.damage;
-    });
-    res.json(Object.values(leaderboard).sort((a, b) => b.kills - a.kills));
-});
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.listen(PORT, () => {
-    console.log(`✅ Сервер запущен на порту ${PORT}`);
-    console.log(`👑 Админ: admin / admin123`);
-});
+            const res = await fetch('/api/stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(statData)
+            });
+            if(res.ok){
+                showStatus('uploadStatus','✅ Статистика отправлена!','success');
+                currentImage=null;
+                document.getElementById('fileInput').value='';
+                document.getElementById('imagePreview').innerHTML='';
+                document.getElementById('videoLink').value='';
+                loadLeaderboard(); loadMyStats(); if(currentUser.role==='admin') loadAdminStats();
+            } else showStatus('uploadStatus','❌ Ошибка отправки','error');
+        } else showStatus('uploadStatus','❌ Не найдено 4 числа','error');
+    } catch(e){ console.error(e); showStatus('uploadStatus','❌ Ошибка распознавания','error'); }
+}
+function showStatus(id,msg,type){ const el=document.getElementById(id); if(el){ el.innerHTML=`<div class="status ${type}">${msg}</div>`; setTimeout(()=>el.innerHTML='',3000); } }
+const savedUser=localStorage.getItem('user');
+if(savedUser){
+    currentUser=JSON.parse(savedUser);
+    document.getElementById('authModal').style.display='none';
+    document.getElementById('uploadSection').style.display='block';
+    document.getElementById('authButtons').style.display='none';
+    document.getElementById('userInfo').style.display='block';
+    document.getElementById('userName').innerHTML=`👤 ${currentUser.username}`;
+    document.getElementById('profileDiscord').innerText=currentUser.discord||'Не указан';
+    document.getElementById('profileGameNick').innerText=currentUser.gameNick||currentUser.username;
+    if(currentUser.role==='admin') {
+        document.getElementById('adminTab').style.display='block';
+        addDebug('✅ Загружен сохранённый пользователь с правами АДМИНА');
+    } else {
+        addDebug('👤 Загружен сохранённый пользователь (обычный)');
+    }
+    loadLeaderboard(); loadMyStats(); if(currentUser.role==='admin') loadAdminStats();
+} else loadLeaderboard();
+</script>
+</body>
+</html>
