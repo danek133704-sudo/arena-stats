@@ -31,7 +31,6 @@ function saveData() {
 
 loadData();
 
-// Регистрация
 app.post('/api/register', (req, res) => {
     const { username, password, gameNick } = req.body;
     if (data.users.find(u => u.username === username)) {
@@ -48,23 +47,16 @@ app.post('/api/register', (req, res) => {
     res.json({ success: true });
 });
 
-// Вход
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     const user = data.users.find(u => u.username === username && u.password === password);
     if (!user) return res.status(400).json({ error: 'Неверный логин или пароль' });
     res.json({
         success: true,
-        user: {
-            id: user.id,
-            username: user.username,
-            gameNick: user.gameNick,
-            role: user.role
-        }
+        user: { id: user.id, username: user.username, gameNick: user.gameNick, role: user.role }
     });
 });
 
-// Обновить профиль
 app.put('/api/profile', (req, res) => {
     const { username, gameNick } = req.body;
     const user = data.users.find(u => u.username === username);
@@ -77,7 +69,6 @@ app.put('/api/profile', (req, res) => {
     }
 });
 
-// Добавить статистику
 app.post('/api/stats', (req, res) => {
     const { username, kills, killPercent, hsPercent, damage, videoLink, screenshot } = req.body;
     const user = data.users.find(u => u.username === username);
@@ -99,19 +90,16 @@ app.post('/api/stats', (req, res) => {
     res.json({ success: true });
 });
 
-// Моя статистика
 app.get('/api/stats/my', (req, res) => {
     const username = req.headers.username;
     const myStats = data.stats.filter(s => s.username === username);
     res.json(myStats);
 });
 
-// Вся статистика (админ)
 app.get('/api/stats/all', (req, res) => {
     res.json(data.stats);
 });
 
-// Подтвердить статистику
 app.put('/api/stats/:id/verify', (req, res) => {
     const stat = data.stats.find(s => s.id == req.params.id);
     if (stat) {
@@ -121,14 +109,12 @@ app.put('/api/stats/:id/verify', (req, res) => {
     res.json({ success: true });
 });
 
-// Удалить статистику
 app.delete('/api/stats/:id', (req, res) => {
     data.stats = data.stats.filter(s => s.id != req.params.id);
     saveData();
     res.json({ success: true });
 });
 
-// Лидерборд
 app.get('/api/leaderboard', (req, res) => {
     const leaderboard = {};
     data.stats.forEach(stat => {
