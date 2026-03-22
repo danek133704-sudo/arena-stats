@@ -347,13 +347,13 @@
         <h2 style="margin-bottom: 16px;">📸 Загрузить скриншот</h2>
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
             <div style="font-size: 44px;">📸</div>
-            <p>Нажми или перетащи скриншот с цифрами (убийства, %, HS%, урон)</p>
+            <p>Нажми или перетащи скриншот с таблицей статистики</p>
             <input type="file" id="fileInput" hidden accept="image/*">
         </div>
         <div id="previewImg" style="text-align: center;"></div>
         <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео (YouTube/Twitch)">
         <div id="ocrResult" class="ocr-highlight" style="display: none;">
-            <b>🔍 Распознано:</b> <span id="ocrText"></span>
+            <b>🔍 Найдено для вашего ника:</b> <span id="ocrText"></span>
             <button class="retry-btn" onclick="retryOCR()">🔄 Распознать заново</button>
         </div>
         <button onclick="submitStats()" style="margin-top: 14px;">📤 Отправить статистику</button>
@@ -406,7 +406,7 @@
     let currentUser = null;
     let currentImageData = null;
     let allLeaderboardData = [];
-    let lastRawNumbers = [];
+    let foundStats = null;
 
     async function compressImage(base64, maxWidth=800, quality=0.6) {
         return new Promise((resolve) => {
@@ -421,12 +421,6 @@
             };
             img.src = base64;
         });
-    }
-
-    function extractNumbers(text) {
-        const matches = text.match(/\d+/g);
-        if (!matches) return [];
-        return matches.map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0 && n < 1000000);
     }
 
     function showStatus(elId, msg, type) {
@@ -603,32 +597,31 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div style="cursor:pointer; text-align:center"><img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;"></div>`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== УЛУЧШЕННАЯ НЕЙРОНКА ==========
-    let lastText = '';
-    async function runOCR() {
-        if (!currentImageData) return null;
+    // ========== НЕЙРОНКА С ПОИСКОМ ПО НИКУ ==========
+    async function findMyStatsInScreenshot() {
+        if (!currentImageData || !currentUser) return null;
         const { data: { text } } = await Tesseract.recognize(currentImageData, 'rus+eng', {
-            tessedit_char_whitelist: '0123456789% ',
+            tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ',
             tessedit_pageseg_mode: 6
         });
-        lastText = text;
-        const rawNumbers = extractNumbers(text);
-        return rawNumbers;
-    }
-
-    async function retryOCR() {
-        if (!currentImageData) return;
-        showStatus('uploadStatus', '🔍 Повторное распознавание...', 'success');
-        const numbers = await runOCR();
-        if (numbers.length >= 4) {
-            lastRawNumbers = numbers.slice(0, 4);
-            document.getElementById('ocrText').innerHTML = `💀 Убийства: ${lastRawNumbers[0]} &nbsp;| 🎯 % убийств: ${lastRawNumbers[1]}% &nbsp;| 💥 HS%: ${lastRawNumbers[2]}% &nbsp;| ⚡ Урон: ${lastRawNumbers[3].toLocaleString()}`;
-            document.getElementById('ocrResult').style.display = 'block';
-            showStatus('uploadStatus', '✅ Распознано! Можете отправить', 'success');
-        } else {
-            document.getElementById('ocrText').innerHTML = `❌ Найдено только ${numbers.length} чисел. Попробуйте другой скриншот или нажмите "Распознать заново"`;
-            document.getElementById('ocrResult').style.display = 'block';
+        
+        const gameNick = (currentUser.gameNick || currentUser.username).toLowerCase();
+        const lines = text.split('\n');
+        
+        for (let line of lines) {
+            if (line.toLowerCase().includes(gameNick)) {
+                const numbers = line.match(/\d+/g);
+                if (numbers && numbers.length >= 4) {
+                    return {
+                        kills: parseInt(numbers[0]),
+                        killPercent: parseFloat(numbers[1]),
+                        hsPercent: parseFloat(numbers[2]),
+                        damage: parseInt(numbers[3])
+                    };
+                }
+            }
         }
+        return null;
     }
 
     document.getElementById('fileInput').onchange = async (e) => {
@@ -638,38 +631,52 @@
             r.onload = async (ev) => {
                 currentImageData = ev.target.result;
                 document.getElementById('previewImg').innerHTML = `<img src="${currentImageData}" style="max-width:100%; max-height:240px; border-radius: 24px; margin-top:12px; border:1px solid #ffaa33;">`;
-                showStatus('uploadStatus', '🔍 Распознавание...', 'success');
-                const numbers = await runOCR();
-                if (numbers.length >= 4) {
-                    lastRawNumbers = numbers.slice(0, 4);
-                    document.getElementById('ocrText').innerHTML = `💀 Убийства: ${lastRawNumbers[0]} &nbsp;| 🎯 % убийств: ${lastRawNumbers[1]}% &nbsp;| 💥 HS%: ${lastRawNumbers[2]}% &nbsp;| ⚡ Урон: ${lastRawNumbers[3].toLocaleString()}`;
+                showStatus('uploadStatus', '🔍 Поиск вашего ника в таблице...', 'success');
+                const stats = await findMyStatsInScreenshot();
+                if (stats) {
+                    foundStats = stats;
+                    document.getElementById('ocrText').innerHTML = `✅ Найдено! Убийства: ${stats.kills} | % убийств: ${stats.killPercent}% | HS%: ${stats.hsPercent}% | Урон: ${stats.damage.toLocaleString()}`;
                     document.getElementById('ocrResult').style.display = 'block';
                     showStatus('uploadStatus', '✅ Готово к отправке', 'success');
                 } else {
-                    document.getElementById('ocrText').innerHTML = `❌ Найдено только ${numbers.length} чисел. Попробуйте другой скриншот или нажмите "Распознать заново"`;
+                    document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${currentUser.gameNick || currentUser.username}" в таблице. Проверьте, что ник в профиле совпадает с тем, что на скриншоте.`;
                     document.getElementById('ocrResult').style.display = 'block';
+                    foundStats = null;
                 }
             };
             r.readAsDataURL(f);
         }
     };
 
+    async function retryOCR() {
+        if (!currentImageData) return;
+        showStatus('uploadStatus', '🔍 Повторный поиск...', 'success');
+        const stats = await findMyStatsInScreenshot();
+        if (stats) {
+            foundStats = stats;
+            document.getElementById('ocrText').innerHTML = `✅ Найдено! Убийства: ${stats.kills} | % убийств: ${stats.killPercent}% | HS%: ${stats.hsPercent}% | Урон: ${stats.damage.toLocaleString()}`;
+            document.getElementById('ocrResult').style.display = 'block';
+            showStatus('uploadStatus', '✅ Готово к отправке', 'success');
+        } else {
+            document.getElementById('ocrText').innerHTML = `❌ Не найден ник "${currentUser.gameNick || currentUser.username}" в таблице.`;
+            foundStats = null;
+        }
+    }
+
     async function submitStats() {
         if (!currentUser) { alert('Войдите в аккаунт'); return; }
         if (!currentImageData) { alert('Сначала выберите скриншот'); return; }
-        if (!lastRawNumbers.length || lastRawNumbers.length < 4) {
-            showStatus('uploadStatus', '❌ Сначала дождитесь распознавания чисел', 'error');
-            return;
-        }
+        if (!foundStats) { alert('Сначала дождитесь распознавания вашего ника в таблице'); return; }
+        
         showStatus('uploadStatus', '📤 Отправка...', 'success');
         try {
             const compressed = await compressImage(currentImageData, 800, 0.6);
             const payload = {
                 username: currentUser.username,
-                kills: lastRawNumbers[0],
-                killPercent: lastRawNumbers[1],
-                hsPercent: lastRawNumbers[2],
-                damage: lastRawNumbers[3],
+                kills: foundStats.kills,
+                killPercent: foundStats.killPercent,
+                hsPercent: foundStats.hsPercent,
+                damage: foundStats.damage,
                 videoLink: document.getElementById('videoLink').value,
                 screenshot: compressed
             };
@@ -681,7 +688,7 @@
                 document.getElementById('previewImg').innerHTML = '';
                 document.getElementById('videoLink').value = '';
                 document.getElementById('ocrResult').style.display = 'none';
-                lastRawNumbers = [];
+                foundStats = null;
                 loadMyStats();
                 if (currentUser.role === 'admin') loadAdminStats();
                 loadLeaderboard();
