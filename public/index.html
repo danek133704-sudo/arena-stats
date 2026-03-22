@@ -47,9 +47,7 @@
         .extracted-data { background: #2c2c2c; padding: 15px; border-radius: 10px; margin-top: 15px; border-left: 3px solid #ffd966; }
         .debug-panel { background: #2c2c2c; padding: 10px; margin-top: 20px; border-radius: 10px; font-size: 12px; color: #888; max-height: 200px; overflow: auto; }
         .admin-card { background: #2c2c2c; padding: 15px; margin: 15px 0; border-radius: 10px; border-left: 3px solid #ffd966; }
-        .admin-card h4 { color: #ffd966; margin-bottom: 10px; }
         .stat-item { background: #1a1a1a; padding: 12px; margin: 8px 0; border-radius: 8px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
-        .stat-item span { color: #ffd966; }
         @media (max-width: 700px) { th, td { font-size: 12px; padding: 8px; } .header { flex-direction: column; } }
     </style>
 </head>
@@ -99,16 +97,16 @@
 
         <div id="leaderboardTab" class="tab-content active">
             <div class="leaderboard-filters"><button class="filter-btn active" onclick="filterLeaderboard('kills')">По убийствам</button><button class="filter-btn" onclick="filterLeaderboard('damage')">По урону</button></div>
-            <table><thead><th>#</th><th>Имя</th><th>Убийства</th><th>Урон</th><th>Видео</th></thead><tbody id="leaderboardBody"><td colspan="5">Загрузка...</td></tbody></table>
+              <table><thead><th>#</th><th>Имя</th><th>Убийства</th><th>Урон</th><th>Видео</th></thead><tbody id="leaderboardBody"><td colspan="5">Загрузка...</td></tbody></table>
         </div>
 
         <div id="mystatsTab" class="tab-content">
-            <table><thead><th>Дата</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Статус</th></thead><tbody id="myStatsBody"><td colspan="9">Загрузка...</td></tbody></table>
+             <table><thead><th>Дата</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Статус</th></thead><tbody id="myStatsBody"><td colspan="9">Загрузка...</td></tbody></table>
         </div>
 
         <div id="adminTabContent" class="tab-content">
             <div id="adminDebug" class="debug-panel" style="margin-bottom: 10px;">🟡 Ожидание загрузки...</div>
-            <div id="adminStatsList" style="margin-top: 20px;"></div>
+            <div id="adminStatsList"></div>
         </div>
     </div>
 </div>
@@ -203,7 +201,7 @@ function updateLeaderboardDisplay(){
     tbody.innerHTML='';
     sorted.slice(0,50).forEach((p,i)=>{
         const cls=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
-        tbody.innerHTML+=`<tr class="${cls}">}。<strong>${i+1}</strong> <strong>${p.gameNick||p.username}</strong><br><small>${p.username}</small> ${p.kills} ${p.damage?.toLocaleString()||0} ${p.videoLink?`<a href="${p.videoLink}" target="_blank">🎥</a>`:'—'} `;
+        tbody.innerHTML+=`<tr class="${cls}"><td><strong>${i+1}</strong><td><strong>${p.gameNick||p.username}</strong><br><small>${p.username}</small><td>${p.kills}<td>${p.damage?.toLocaleString()||0}<td>${p.videoLink?`<a href="${p.videoLink}" target="_blank">🎥</a>`:'—'}</tr>`;
     });
     if(sorted.length===0) tbody.innerHTML='<td colspan="5">Нет данных</td>';
 }
@@ -215,7 +213,7 @@ async function loadMyStats(){
     const tbody=document.getElementById('myStatsBody');
     tbody.innerHTML='';
     stats.forEach(s=>{
-        tbody.innerHTML+=`<tr><td>${new Date(s.date).toLocaleDateString()}</td><td><strong>${s.gameNick||s.username}</strong></td><td>${s.kills}</td><td>${s.killPercent||0}%</td><td>${s.hsPercent||0}%</td><td>${s.damage?.toLocaleString()||0}</td><td>${s.videoLink?`<a href="${s.videoLink}" target="_blank">🎥</a>`:'—'}</td><td>${s.screenshot?`<img src="${s.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${s.screenshot}')">`:'—'}</td><td>${s.verified?'✅':'⏳'}</td></tr>`;
+        tbody.innerHTML+=`<tr><td>${new Date(s.date).toLocaleDateString()}<td><strong>${s.gameNick||s.username}</strong><td>${s.kills}<td>${s.killPercent||0}%<td>${s.hsPercent||0}%<td>${s.damage?.toLocaleString()||0}<td>${s.videoLink?`<a href="${s.videoLink}" target="_blank">🎥</a>`:'—'}<td>${s.screenshot?`<img src="${s.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${s.screenshot}')">`:'—'}<td>${s.verified?'✅':'⏳'}</tr>`;
     });
     if(stats.length===0) tbody.innerHTML='<td colspan="9">Нет данных</td>';
 }
@@ -243,7 +241,6 @@ async function loadAdminStats(){
                 <div class="stat-item">
                     <span><strong>ID:</strong> ${s.id}</span>
                     <span><strong>Имя:</strong> ${s.gameNick || s.username}</span>
-                    <span><strong>Логин:</strong> ${s.username}</span>
                     <span><strong>Убийства:</strong> ${s.kills}</span>
                     <span><strong>%:</strong> ${s.killPercent || 0}%</span>
                     <span><strong>HS%:</strong> ${s.hsPercent || 0}%</span>
