@@ -14,19 +14,16 @@ const pool = new Pool({
 
 async function initDb() {
     try {
-        // Таблица users с discord
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 game_nick TEXT,
-                discord TEXT,
                 role TEXT DEFAULT 'user'
             )
         `);
         
-        // Таблица stats
         await pool.query(`
             CREATE TABLE IF NOT EXISTS stats (
                 id SERIAL PRIMARY KEY,
@@ -44,10 +41,6 @@ async function initDb() {
             )
         `);
         
-        // Добавляем discord если нет
-        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS discord TEXT`);
-        
-        // Админ с паролем gtafak
         const adminExists = await pool.query('SELECT * FROM users WHERE username = $1', ['admin']);
         if (adminExists.rows.length === 0) {
             const hash = await bcrypt.hash('gtafak', 10);
@@ -57,7 +50,6 @@ async function initDb() {
             );
             console.log('✅ Админ создан (admin / gtafak)');
         } else {
-            // Обновляем пароль на случай, если он старый
             const hash = await bcrypt.hash('gtafak', 10);
             await pool.query('UPDATE users SET password = $1 WHERE username = $2', [hash, 'admin']);
             console.log('✅ Пароль админа обновлён на gtafak');
@@ -74,15 +66,15 @@ initDb();
 // ========== API ==========
 app.post('/api/register', async (req, res) => {
     try {
-        const { username, password, gameNick, discord } = req.body;
+        const { username, password, gameNick } = req.body;
         const exist = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
         if (exist.rows.length > 0) {
             return res.status(400).json({ error: 'Пользователь уже существует' });
         }
         const hash = await bcrypt.hash(password, 10);
         await pool.query(
-            'INSERT INTO users (username, password, game_nick, discord) VALUES ($1, $2, $3, $4)',
-            [username, hash, gameNick || username, discord || '']
+            'INSERT INTO users (username, password, game_nick) VALUES ($1, $2, $3)',
+            [username, hash, gameNick || username]
         );
         res.json({ success: true });
     } catch (e) {
@@ -109,7 +101,6 @@ app.post('/api/login', async (req, res) => {
                 id: user.id,
                 username: user.username,
                 gameNick: user.game_nick,
-                discord: user.discord || '',
                 role: user.role
             }
         });
@@ -120,8 +111,8 @@ app.post('/api/login', async (req, res) => {
 
 app.put('/api/profile', async (req, res) => {
     try {
-        const { username, discord, gameNick } = req.body;
-        await pool.query('UPDATE users SET discord = $1, game_nick = $2 WHERE username = $3', [discord, gameNick, username]);
+        const { username, gameNick } = req.body;
+        await pool.query('UPDATE users SET game_nick = $1 WHERE username = $2', [gameNick, username]);
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: 'Ошибка обновления' });
@@ -185,6 +176,6 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`✅ Сервер запущен на порту ${PORT}`);
+    console.log(`✅ Сервер на порту ${PORT}`);
     console.log(`👑 Админ: admin / gtafak`);
 });
