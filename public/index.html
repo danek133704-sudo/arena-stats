@@ -169,6 +169,42 @@
     let ocrWorker = null;
     let localNick = localStorage.getItem('arena_local_nick') || '';
 
+    // ========== ПРЕДОБРАБОТКА ИЗОБРАЖЕНИЯ ==========
+    function preprocessImage(base64) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                // Получаем пиксели
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                // Увеличиваем контраст и делаем ч/б
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i+1];
+                    const b = data[i+2];
+                    const brightness = (r + g + b) / 3;
+                    // Усиливаем контраст: тёмные делаем чёрными, светлые белыми
+                    const threshold = 140;
+                    const value = brightness > threshold ? 255 : 0;
+                    data[i] = value;
+                    data[i+1] = value;
+                    data[i+2] = value;
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.src = base64;
+        });
+    }
+
     async function compressImage(base64, maxWidth=800, quality=0.6) {
         return new Promise((resolve) => {
             const img = new Image();
@@ -282,7 +318,7 @@
         tbody.innerHTML = '';
         if (!stats.length) { tbody.innerHTML = '<td colspan="10">Нет данных<\/td>'; return; }
         stats.forEach(s => {
-            tbody.innerHTML += `}。<td>${new Date(s.date).toLocaleDateString()}<\/td> <td><strong>${s.game_nick}<\/strong><\/td> <td>${s.kills}<\/td> <td>${s.kill_percent||0}%<\/td> <td>${s.hs_percent||0}%<\/td> <td>${s.damage?.toLocaleString()}<\/td> <td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}<\/td> <td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}<\/td> <td>${s.verified ? '✅' : '⏳'}<\/td> <td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—'}<\/td><\/tr>`;
+            tbody.innerHTML += `}。}<td>${new Date(s.date).toLocaleDateString()}<\/td> <td><strong>${s.game_nick}<\/strong><\/td> <td>${s.kills}<\/td> <td>${s.kill_percent||0}%<\/td> <td>${s.hs_percent||0}%<\/td> <td>${s.damage?.toLocaleString()}<\/td> <td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}<\/td> <td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}<\/td> <td>${s.verified ? '✅' : '⏳'}<\/td> <td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—'}<\/td><\/tr>`;
         });
     }
     async function deleteMyStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadMyStats(); loadLeaderboard(); showStatus('uploadStatus', '✅ Удалено', 'success'); }
@@ -302,7 +338,7 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НЕЙРОНКА ==========
+    // ========== НЕЙРОНКА С ПРЕДОБРАБОТКОЙ ==========
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
@@ -321,8 +357,12 @@
             showStatus('uploadStatus', '✅ Нейронка готова!', 'success');
         }
         
-        showStatus('uploadStatus', '🔍 Распознавание...', 'success');
-        const { data: { text } } = await ocrWorker.recognize(currentImageData);
+        showStatus('uploadStatus', '🔍 Предобработка изображения...', 'success');
+        const processedImage = await preprocessImage(currentImageData);
+        
+        showStatus('uploadStatus', '🔍 Распознавание текста...', 'success');
+        const { data: { text } } = await ocrWorker.recognize(processedImage);
+        
         const lines = text.split('\n');
         for (let line of lines) {
             if (line.toLowerCase().includes(nickToFind.toLowerCase())) {
