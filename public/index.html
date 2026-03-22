@@ -370,7 +370,7 @@
             <table id="leaderboardTable">
                 <thead> <th>#</th><th>Игрок</th><th>Убийства</th><th>Урон</th><th>Видео</th> </thead>
                 <tbody id="leaderboardBody"><td colspan="5">Загрузка...</td></tbody>
-             </table>
+            </table>
         </div>
 
         <div id="mystatsPanel" class="tab-content">
@@ -389,7 +389,6 @@
 <div id="editProfileModal" class="modal" style="display: none;">
     <div class="modal-card">
         <h3>✏️ Редактировать</h3>
-        <input type="text" id="editDiscordField" placeholder="Discord">
         <input type="text" id="editGameNickField" placeholder="Игровой ник">
         <button onclick="saveProfile()">Сохранить</button>
         <button class="btn-outline" onclick="closeEditModal()">Отмена</button>
@@ -466,17 +465,15 @@
 
     function logout() { localStorage.removeItem('user'); location.reload(); }
     function toggleProfile() { const d = document.getElementById('profileDropdown'); d.style.display = d.style.display === 'none' ? 'block' : 'none'; }
-    function openEditProfile() { document.getElementById('editDiscordField').value = currentUser?.discord || ''; document.getElementById('editGameNickField').value = currentUser?.gameNick || ''; document.getElementById('editProfileModal').style.display = 'flex'; }
+    function openEditProfile() { document.getElementById('editGameNickField').value = currentUser?.gameNick || ''; document.getElementById('editProfileModal').style.display = 'flex'; }
     function closeEditModal() { document.getElementById('editProfileModal').style.display = 'none'; }
     async function saveProfile() {
-        const discord = document.getElementById('editDiscordField').value;
         const gameNick = document.getElementById('editGameNickField').value;
-        const res = await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser.username, discord, gameNick }) });
+        const res = await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser.username, gameNick }) });
         if (res.ok) {
             const data = await res.json();
-            currentUser.discord = data.user.discord; currentUser.gameNick = data.user.gameNick;
+            currentUser.gameNick = data.user.gameNick;
             localStorage.setItem('user', JSON.stringify(currentUser));
-            document.getElementById('profileDiscord').innerText = currentUser.discord || '—';
             document.getElementById('profileGameNick').innerText = currentUser.gameNick || currentUser.username;
             closeEditModal();
             showStatus('uploadStatus', '✅ Профиль обновлён', 'success');
@@ -521,7 +518,7 @@
             if (idx === 0) cls = 'rank-1';
             if (idx === 1) cls = 'rank-2';
             if (idx === 2) cls = 'rank-3';
-            tbody.innerHTML += `<tr class="${cls}"><td><b>${idx+1}</b></td><td><b>${p.game_nick || p.username}</b><br><small>${p.username}</small></td><td>${p.kills}</td><td>${p.damage?.toLocaleString()}</td><td>${p.video_link ? `<a href="${p.video_link}" target="_blank">🎥</a>` : '—'}</td></tr>`;
+            tbody.innerHTML += `<tr class="${cls}">}<strong>${idx+1}</strong> <strong>${p.game_nick || p.username}</strong><br><small>${p.username}</small> ${p.kills} ${p.damage?.toLocaleString()} ${p.video_link ? `<a href="${p.video_link}" target="_blank">🎥</a>` : '—'} `;
         });
     }
 
@@ -552,7 +549,7 @@
         tbody.innerHTML = '';
         if (!stats.length) { tbody.innerHTML = '<td colspan="9">Нет данных</td>'; return; }
         stats.forEach(s => {
-            tbody.innerHTML += `<tr><td>${new Date(s.date).toLocaleDateString()}</td><td>${s.game_nick}</td><td>${s.kills}</td><td>${s.kill_percent||0}%</td><td>${s.hs_percent||0}%</td><td>${s.damage?.toLocaleString()}</td><td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}</td><td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}</td><td>${s.verified ? '✅' : '⏳'}</td></tr>`;
+            tbody.innerHTML += `}<td>${new Date(s.date).toLocaleDateString()} <td><strong>${s.game_nick}</strong> <td>${s.kills} <td>${s.kill_percent||0}% <td>${s.hs_percent||0}% <td>${s.damage?.toLocaleString()} <td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'} <td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'} <td>${s.verified ? '✅' : '⏳'} `;
         });
     }
 
