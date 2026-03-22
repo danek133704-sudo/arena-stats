@@ -14,13 +14,11 @@ let data = { users: [], stats: [] };
 function loadData() {
     try {
         if (fs.existsSync(DATA_FILE)) {
-            const raw = fs.readFileSync(DATA_FILE, 'utf8');
-            data = JSON.parse(raw);
+            data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
             console.log(`📁 Загружено: ${data.users.length} пользователей, ${data.stats.length} записей`);
-            console.log(`⏳ Неподтверждённых: ${data.stats.filter(s => !s.verified).length}`);
         } else {
             data = {
-                users: [{ id: 1, username: 'admin', password: 'admin123', gameNick: 'Admin', discord: '', role: 'admin' }],
+                users: [{ id: 1, username: 'admin', password: 'admin123', gameNick: 'Admin', role: 'admin' }],
                 stats: []
             };
             saveData();
@@ -34,27 +32,9 @@ function saveData() {
     console.log('💾 Данные сохранены');
 }
 
-// ============= API РОУТЫ =============
+loadData();
 
-app.get('/api/leaderboard', (req, res) => {
-    const leaderboard = {};
-    data.stats.forEach(stat => {
-        if (!stat.verified) return;
-        if (!leaderboard[stat.username]) {
-            leaderboard[stat.username] = { 
-                username: stat.username, 
-                gameNick: stat.gameNick, 
-                kills: 0, 
-                damage: 0,
-                videoLink: stat.videoLink
-            };
-        }
-        leaderboard[stat.username].kills += stat.kills || 0;
-        leaderboard[stat.username].damage += stat.damage || 0;
-    });
-    res.json(Object.values(leaderboard).sort((a,b) => b.kills - a.kills));
-});
-
+// Регистрация
 app.post('/api/register', (req, res) => {
     const { username, password, gameNick, discord } = req.body;
     if (data.users.find(u => u.username === username)) {
@@ -74,23 +54,25 @@ app.post('/api/register', (req, res) => {
     res.json({ success: true });
 });
 
+// Вход
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     const user = data.users.find(u => u.username === username && u.password === password);
     if (!user) return res.status(400).json({ error: 'Неверный логин или пароль' });
     console.log(`🔐 Вход: ${username} (${user.role})`);
-    res.json({ 
-        success: true, 
-        user: { 
-            id: user.id, 
-            username: user.username, 
+    res.json({
+        success: true,
+        user: {
+            id: user.id,
+            username: user.username,
             gameNick: user.gameNick,
             discord: user.discord,
-            role: user.role 
-        } 
+            role: user.role
+        }
     });
 });
 
+// Обновить профиль
 app.put('/api/profile', (req, res) => {
     const { username, discord, gameNick } = req.body;
     const user = data.users.find(u => u.username === username);
@@ -101,8 +83,9 @@ app.put('/api/profile', (req, res) => {
     res.json({ success: true, user: { username: user.username, discord: user.discord, gameNick: user.gameNick, role: user.role } });
 });
 
+// Добавить статистику
 app.post('/api/stats', (req, res) => {
-    const { username, kills, killPercent, damagePercent, damage, videoLink, screenshot, server } = req.body;
+    const { username, kills, killPercent, hsPercent, damage, videoLink, screenshot } = req.body;
     const user = data.users.find(u => u.username === username);
     const isAdmin = user?.role === 'admin';
     
@@ -112,32 +95,34 @@ app.post('/api/stats', (req, res) => {
         gameNick: user?.gameNick || username,
         kills: kills || 0,
         killPercent: killPercent || 0,
-        damagePercent: damagePercent || 0,
+        hsPercent: hsPercent || 0,
         damage: damage || 0,
         videoLink: videoLink || '',
         screenshot: screenshot || '',
-        server: server || '',
         verified: isAdmin ? true : false,
         date: new Date().toISOString()
     };
     data.stats.push(newStat);
     saveData();
-    console.log(`📊 Статистика от ${username}: убийства=${kills}, %=${killPercent}%, HS%=${damagePercent}%, урон=${damage}`);
-    console.log(`   Статус: ${isAdmin ? '✅ ПОДТВЕРЖДЕНА' : '⏳ ОЖИДАЕТ'}`);
-    res.json({ success: true, stat: newStat });
+    console.log(`📊 Статистика от ${username}: убийства=${kills}, %=${killPercent}%, HS%=${hsPercent}%, урон=${damage}`);
+    console.log(`   Статус: ${isAdmin ? 'ПОДТВЕРЖДЕНА' : 'ОЖИДАЕТ'}`);
+    res.json({ success: true });
 });
 
+// Моя статистика
 app.get('/api/stats/my', (req, res) => {
     const username = req.headers.username;
     const myStats = data.stats.filter(s => s.username === username);
     res.json(myStats);
 });
 
+// Вся статистика (для админа)
 app.get('/api/stats/all', (req, res) => {
-    console.log(`📋 Запрос всех статистик: всего ${data.stats.length}, неподтверждённых: ${data.stats.filter(s => !s.verified).length}`);
+    console.log(`📋 Запрос всех статистик: всего ${data.stats.length}`);
     res.json(data.stats);
 });
 
+// Подтвердить статистику
 app.put('/api/stats/:id/verify', (req, res) => {
     const stat = data.stats.find(s => s.id == req.params.id);
     if (stat) {
@@ -148,6 +133,7 @@ app.put('/api/stats/:id/verify', (req, res) => {
     res.json({ success: true });
 });
 
+// Удалить статистику
 app.delete('/api/stats/:id', (req, res) => {
     data.stats = data.stats.filter(s => s.id != req.params.id);
     saveData();
@@ -155,13 +141,30 @@ app.delete('/api/stats/:id', (req, res) => {
     res.json({ success: true });
 });
 
+// Лидерборд
+app.get('/api/leaderboard', (req, res) => {
+    const leaderboard = {};
+    data.stats.forEach(stat => {
+        if (!stat.verified) return;
+        if (!leaderboard[stat.username]) {
+            leaderboard[stat.username] = {
+                username: stat.username,
+                gameNick: stat.gameNick,
+                kills: 0,
+                damage: 0
+            };
+        }
+        leaderboard[stat.username].kills += stat.kills;
+        leaderboard[stat.username].damage += stat.damage;
+    });
+    res.json(Object.values(leaderboard).sort((a, b) => b.kills - a.kills));
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-loadData();
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, () => {
     console.log(`✅ Сервер запущен на порту ${PORT}`);
     console.log(`👑 Админ: admin / admin123`);
-    console.log(`📊 Всего записей: ${data.stats.length}, ожидают проверки: ${data.stats.filter(s => !s.verified).length}`);
 });
