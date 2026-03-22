@@ -7,13 +7,11 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
-// Подключение к PostgreSQL (переменная DATABASE_URL уже есть на Railway)
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
-// Создание таблиц
 async function initDb() {
     try {
         await pool.query(`
@@ -43,15 +41,24 @@ async function initDb() {
             )
         `);
         
-        // Создаём админа, если нет
+        // Проверяем, есть ли админ
         const adminCheck = await pool.query('SELECT * FROM users WHERE username = $1', ['admin']);
         if (adminCheck.rows.length === 0) {
-            const hash = await bcrypt.hash('admin123', 10);
+            // Создаём нового админа с паролем gtafak
+            const hash = await bcrypt.hash('gtafak', 10);
             await pool.query(
                 'INSERT INTO users (username, password, game_nick, role) VALUES ($1, $2, $3, $4)',
                 ['admin', hash, 'Admin', 'admin']
             );
-            console.log('✅ Админ создан');
+            console.log('✅ Админ создан (admin / gtafak)');
+        } else {
+            // Обновляем пароль существующего админа
+            const hash = await bcrypt.hash('gtafak', 10);
+            await pool.query(
+                'UPDATE users SET password = $1 WHERE username = $2',
+                [hash, 'admin']
+            );
+            console.log('✅ Пароль админа обновлён на gtafak');
         }
         console.log('✅ Таблицы готовы');
     } catch (err) {
@@ -168,5 +175,5 @@ app.get('/', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`✅ Сервер на порту ${PORT}`);
-    console.log(`👑 Админ: admin / admin123`);
+    console.log(`👑 Админ: admin / gtafak`);
 });
