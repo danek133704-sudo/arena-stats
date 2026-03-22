@@ -105,8 +105,7 @@ app.post('/api/stats', (req, res) => {
     data.stats.push(newStat);
     saveData();
     console.log(`📊 Статистика от ${username}: убийства=${kills}, %=${killPercent}%, HS%=${hsPercent}%, урон=${damage}`);
-    console.log(`   Статус: ${isAdmin ? 'ПОДТВЕРЖДЕНА' : 'ОЖИДАЕТ'}`);
-    res.json({ success: true });
+    res.json({ success: true, stat: newStat });
 });
 
 // Моя статистика
@@ -119,6 +118,7 @@ app.get('/api/stats/my', (req, res) => {
 // Вся статистика (для админа)
 app.get('/api/stats/all', (req, res) => {
     console.log(`📋 Запрос всех статистик: всего ${data.stats.length}`);
+    console.log(`📋 Неподтверждённых: ${data.stats.filter(s => !s.verified).length}`);
     res.json(data.stats);
 });
 
