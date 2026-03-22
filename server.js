@@ -86,9 +86,11 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// ✅ ОБНОВЛЕНИЕ НИКА
 app.put('/api/profile', async (req, res) => {
     try {
         const { username, gameNick } = req.body;
+        console.log(`📝 Обновление ника для ${username}: ${gameNick}`);
         const user = data.users.find(u => u.username === username);
         if (user) {
             user.game_nick = gameNick;
@@ -98,6 +100,7 @@ app.put('/api/profile', async (req, res) => {
             res.status(404).json({ error: 'Пользователь не найден' });
         }
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'Ошибка' });
     }
 });
