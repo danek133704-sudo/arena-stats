@@ -104,12 +104,12 @@
 
         <div id="adminTabContent" class="tab-content">
             <div id="adminDebug" class="debug-panel" style="margin-bottom: 10px;">🟡 Ожидание загрузки...</div>
-            <div style="overflow-x: auto;">
+            <div id="adminTableContainer" style="overflow-x: auto;">
                 <table id="adminStatsTable">
                     <thead>
-                        <tr><th>ID</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Действия</th>行政法规
+                        <tr><th>ID</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Действия</th></tr>
                     </thead>
-                    <tbody id="adminStatsBody">叭<td colspan="9">Загрузка...</td> </tbody>
+                    <tbody id="adminStatsBody"><tr><td colspan="9">Загрузка...</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -239,16 +239,17 @@ async function loadAdminStats(){
             return;
         }
         for(let s of unverified){
-            const row = tbody.insertRow();
-            row.insertCell(0).innerHTML = s.id;
-            row.insertCell(1).innerHTML = `<strong>${s.gameNick || s.username}</strong><br><small>${s.username}</small>`;
-            row.insertCell(2).innerHTML = s.kills;
-            row.insertCell(3).innerHTML = (s.killPercent || 0) + '%';
-            row.insertCell(4).innerHTML = (s.hsPercent || 0) + '%';
-            row.insertCell(5).innerHTML = s.damage?.toLocaleString() || 0;
-            row.insertCell(6).innerHTML = s.videoLink ? `<a href="${s.videoLink}" target="_blank">🎥</a>` : '—';
-            row.insertCell(7).innerHTML = s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${s.screenshot}')">` : '—';
-            row.insertCell(8).innerHTML = `<button class="verify-btn" onclick="verifyStat(${s.id})">✅</button><button class="delete-btn" onclick="deleteStat(${s.id})">🗑️</button>`;
+            tbody.innerHTML += `<tr>
+                <td>${s.id}</td>
+                <td><strong>${s.gameNick || s.username}</strong><br><small>${s.username}</small></td>
+                <td>${s.kills}</td>
+                <td>${s.killPercent || 0}%</td>
+                <td>${s.hsPercent || 0}%</td>
+                <td>${s.damage?.toLocaleString() || 0}</td>
+                <td>${s.videoLink ? `<a href="${s.videoLink}" target="_blank">🎥</a>` : '—'}</td>
+                <td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showScreenshot('${s.screenshot}')">` : '—'}</td>
+                <td><button class="verify-btn" onclick="verifyStat(${s.id})">✅</button><button class="delete-btn" onclick="deleteStat(${s.id})">🗑️</button></td>
+            </tr>`;
         }
         addDebug(`✅ Отображено ${unverified.length} записей в админ-панели`);
     } catch(e) { 
