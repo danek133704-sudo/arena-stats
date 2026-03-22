@@ -46,14 +46,9 @@
         .profile-dropdown { position: absolute; right: 0; top: 100%; background: #1a1a1a; border: 1px solid #ffd966; border-radius: 10px; padding: 15px; min-width: 250px; z-index: 100; margin-top: 5px; }
         .extracted-data { background: #2c2c2c; padding: 15px; border-radius: 10px; margin-top: 15px; border-left: 3px solid #ffd966; }
         .debug-panel { background: #2c2c2c; padding: 10px; margin-top: 20px; border-radius: 10px; font-size: 12px; color: #888; max-height: 200px; overflow: auto; }
+        .admin-raw-data { background: #2c2c2c; padding: 15px; margin-top: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; color: #ffd966; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow: auto; }
         @media (max-width: 700px) { th, td { font-size: 12px; padding: 8px; } .header { flex-direction: column; } }
     </style>
-    #adminStatsTable tr {
-    display: table-row !important;
-}
-#adminStatsBody tr {
-    display: table-row !important;
-}
 </head>
 <body>
 <div class="container">
@@ -105,17 +100,24 @@
         </div>
 
         <div id="mystatsTab" class="tab-content">
-             <table><thead><th>Дата</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Статус</th></thead><tbody id="myStatsBody"><td colspan="9">Загрузка...</td></tbody></table>
+            <table><thead><th>Дата</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Статус</th></thead><tbody id="myStatsBody"><td colspan="9">Загрузка...</td></tbody></table>
         </div>
 
         <div id="adminTabContent" class="tab-content">
             <div id="adminDebug" class="debug-panel" style="margin-bottom: 10px;">🟡 Ожидание загрузки...</div>
-            <div id="adminTableContainer" style="overflow-x: auto;">
+            
+            <div style="background: #2c2c2c; padding: 15px; margin: 15px 0; border-radius: 10px; border-left: 3px solid #ffd966;">
+                <h4 style="color: #ffd966; margin-bottom: 10px;">📋 СЫРЫЕ ДАННЫЕ (JSON):</h4>
+                <div id="rawDataDisplay" style="font-family: monospace; font-size: 12px; color: #aaa; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow: auto;"></div>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <h4 style="color: #ffd966; margin-bottom: 10px;">📋 ТАБЛИЦА:</h4>
                 <table id="adminStatsTable">
                     <thead>
-                        <tr><th>ID</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Действия</th></tr>
+                        <tr><th>ID</th><th>Имя</th><th>Убийства</th><th>%</th><th>HS %</th><th>Урон</th><th>Видео</th><th>Скриншот</th><th>Действия</th>\\
                     </thead>
-                    <tbody id="adminStatsBody"><tr><td colspan="9">Загрузка...</td></tr></tbody>
+                    <tbody id="adminStatsBody">叭<td colspan="9">Загрузка...</td> </tbody>
                 </table>
             </div>
         </div>
@@ -212,7 +214,7 @@ function updateLeaderboardDisplay(){
     tbody.innerHTML='';
     sorted.slice(0,50).forEach((p,i)=>{
         const cls=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
-        tbody.innerHTML+=`<tr class="${cls}"><td><strong>${i+1}</strong></td><td><strong>${p.gameNick||p.username}</strong><br><small>${p.username}</small></td><td>${p.kills}</td><td>${p.damage?.toLocaleString()||0}</td><td>${p.videoLink?`<a href="${p.videoLink}" target="_blank">🎥</a>`:'—'}</td></tr>`;
+        tbody.innerHTML+=`<tr class="${cls}">}<td><strong>${i+1}</strong></td><td><strong>${p.gameNick||p.username}</strong><br><small>${p.username}</small></td><td>${p.kills}</td><td>${p.damage?.toLocaleString()||0}</td><td>${p.videoLink?`<a href="${p.videoLink}" target="_blank">🎥</a>`:'—'}</td></tr>`;
     });
     if(sorted.length===0) tbody.innerHTML='<td colspan="5">Нет данных</td>';
 }
@@ -235,12 +237,14 @@ async function loadAdminStats(){
         const res=await fetch('/api/stats/all');
         const stats=await res.json();
         addDebug(`📊 Получено ${stats.length} записей из базы`);
+        document.getElementById('rawDataDisplay').innerHTML = JSON.stringify(stats, null, 2);
+        
         const unverified=stats.filter(s=>!s.verified);
         addDebug(`⏳ Из них неподтверждённых: ${unverified.length}`);
         const tbody = document.getElementById('adminStatsBody');
         tbody.innerHTML = '';
         if(unverified.length === 0){
-            tbody.innerHTML = '<tr><td colspan="9">✅ Нет неподтвержденной статистики</td></tr>';
+            tbody.innerHTML = '<td colspan="9">✅ Нет неподтвержденной статистики</td>';
             addDebug('✅ Нет неподтверждённых записей');
             return;
         }
