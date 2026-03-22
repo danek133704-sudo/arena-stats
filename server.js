@@ -91,12 +91,12 @@ app.post('/api/stats', (req, res) => {
     
     const newStat = {
         id: Date.now(),
-        username,
+        username: username,
         gameNick: user?.gameNick || username,
-        kills: kills || 0,
-        killPercent: killPercent || 0,
-        hsPercent: hsPercent || 0,
-        damage: damage || 0,
+        kills: Number(kills) || 0,
+        killPercent: Number(killPercent) || 0,
+        hsPercent: Number(hsPercent) || 0,
+        damage: Number(damage) || 0,
         videoLink: videoLink || '',
         screenshot: screenshot || '',
         verified: isAdmin ? true : false,
@@ -104,9 +104,10 @@ app.post('/api/stats', (req, res) => {
     };
     data.stats.push(newStat);
     saveData();
-    console.log(`📊 Статистика от ${username}: убийства=${kills}, %=${killPercent}%, HS%=${hsPercent}%, урон=${damage}`);
-    console.log(`   Статус: ${isAdmin ? 'ПОДТВЕРЖДЕНА' : 'ОЖИДАЕТ'}`);
-    res.json({ success: true });
+    console.log(`📊 СТАТИСТИКА СОХРАНЕНА:`);
+    console.log(`   ${username}: убийства=${newStat.kills}, %=${newStat.killPercent}%, HS%=${newStat.hsPercent}%, урон=${newStat.damage}`);
+    console.log(`   Всего записей: ${data.stats.length}, неподтверждённых: ${data.stats.filter(s => !s.verified).length}`);
+    res.json({ success: true, stat: newStat });
 });
 
 // Моя статистика
@@ -118,7 +119,8 @@ app.get('/api/stats/my', (req, res) => {
 
 // Вся статистика (для админа)
 app.get('/api/stats/all', (req, res) => {
-    console.log(`📋 Запрос всех статистик: всего ${data.stats.length}`);
+    console.log(`📋 ЗАПРОС ВСЕХ СТАТИСТИК: всего ${data.stats.length}`);
+    console.log(`📋 Детально:`, data.stats.map(s => ({ id: s.id, username: s.username, kills: s.kills, killPercent: s.killPercent, hsPercent: s.hsPercent, damage: s.damage, verified: s.verified })));
     res.json(data.stats);
 });
 
