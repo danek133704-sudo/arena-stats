@@ -416,15 +416,22 @@
     let allLeaderboardData = [];
     let foundStats = null;
 
-    // Функция для нечёткого поиска (сравнивает строки с учётом похожих символов)
-    function fuzzyMatch(str1, str2) {
-        const s1 = str1.toLowerCase().replace(/[^a-z0-9_]/g, '');
-        const s2 = str2.toLowerCase().replace(/[^a-z0-9_]/g, '');
-        if (s1 === s2) return true;
-        if (s1.includes(s2) || s2.includes(s1)) return true;
-        // Проверка на замену l -> I, I -> l, O -> 0 и т.д.
-        const normalize = (s) => s.replace(/l/g, 'i').replace(/I/g, 'i').replace(/0/g, 'o').replace(/O/g, 'o');
-        return normalize(s1) === normalize(s2);
+    // Очистка ника от подчёркиваний и спецсимволов
+    function normalizeNick(nick) {
+        return nick.toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    // Нечёткий поиск с учётом возможных ошибок OCR
+    function fuzzyMatch(ocrWord, targetNick) {
+        const cleanOcr = ocrWord.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanTarget = targetNick.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        if (cleanOcr === cleanTarget) return true;
+        if (cleanOcr.includes(cleanTarget) || cleanTarget.includes(cleanOcr)) return true;
+        
+        // Проверка на похожие символы (l -> 1, O -> 0, I -> l и т.д.)
+        const normalize = (s) => s.replace(/l/g, 'i').replace(/1/g, 'i').replace(/0/g, 'o').replace(/O/g, 'o').replace(/I/g, 'i');
+        return normalize(cleanOcr) === normalize(cleanTarget);
     }
 
     async function compressImage(base64, maxWidth=800, quality=0.6) {
@@ -538,7 +545,7 @@
             if (idx === 0) cls = 'rank-1';
             if (idx === 1) cls = 'rank-2';
             if (idx === 2) cls = 'rank-3';
-            tbody.innerHTML += `<tr class="${cls}">}<b>${idx+1}</b> <b>${p.game_nick || p.username}</b><br><small>${p.username}</small> ${p.kills} ${p.damage?.toLocaleString()} ${p.video_link ? `<a href="${p.video_link}" target="_blank">🎥</a>` : '—'} `;
+            tbody.innerHTML += `<tr class="${cls}"><td><b>${idx+1}</b></td><td><b>${p.game_nick || p.username}</b><br><small>${p.username}</small></td><td>${p.kills}</td><td>${p.damage?.toLocaleString()}</td><td>${p.video_link ? `<a href="${p.video_link}" target="_blank">🎥</a>` : '—'}</td></tr>`;
         });
     }
 
@@ -616,15 +623,20 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div style="cursor:pointer; text-align:center"><img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;"></div>`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НЕЙРОНКА С НЕЧЁТКИМ ПОИСКОМ ==========
+    // ========== НЕЙРОНКА С ПОИСКОМ ПО НИКУ (с нормализацией) ==========
     async function findMyStatsInScreenshot() {
         if (!currentImageData || !currentUser) return null;
+        
+        const gameNick = currentUser.gameNick || currentUser.username;
+        const normalizedTarget = normalizeNick(gameNick);
+        
         const { data: { text } } = await Tesseract.recognize(currentImageData, 'rus+eng', {
             tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ',
             tessedit_pageseg_mode: 6
         });
         
-        const gameNick = currentUser.gameNick || currentUser.username;
+        console.log('Распознанный текст:', text);
+        
         const lines = text.split('\n');
         
         for (let line of lines) {
