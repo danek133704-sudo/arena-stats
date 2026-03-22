@@ -7,21 +7,9 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
-console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
-
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
-});
-
-// Проверка подключения
-pool.connect((err, client, release) => {
-    if (err) {
-        console.error('❌ Ошибка подключения к БД:', err.message);
-    } else {
-        console.log('✅ База данных подключена');
-        release();
-    }
 });
 
 async function initDb() {
@@ -74,27 +62,21 @@ async function initDb() {
 
 initDb();
 
-// ========== API ==========
 app.post('/api/register', async (req, res) => {
     try {
         const { username, password, gameNick } = req.body;
-        console.log('Регистрация:', username);
-        
         const exist = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
         if (exist.rows.length > 0) {
             return res.status(400).json({ error: 'Пользователь уже существует' });
         }
-        
         const hash = await bcrypt.hash(password, 10);
         await pool.query(
             'INSERT INTO users (username, password, game_nick) VALUES ($1, $2, $3)',
             [username, hash, gameNick || username]
         );
-        
-        console.log('✅ Пользователь зарегистрирован:', username);
         res.json({ success: true });
     } catch (e) {
-        console.error('Ошибка регистрации:', e);
+        console.error(e);
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
@@ -174,28 +156,6 @@ app.put('/api/stats/:id/verify', async (req, res) => {
 app.delete('/api/stats/:id', async (req, res) => {
     await pool.query('DELETE FROM stats WHERE id = $1', [req.params.id]);
     res.json({ success: true });
-});
-
-app.get('/api/leaderboard', async (req, res) => {
-    const result = await pool.query(`
-        SELECT username, game_nick, SUM(kills) as kills, SUM(damage) as damage
-        FROM stats
-        WHERE verified = true
-        GROUP BY username, game_nick
-        ORDER BY kills DESC
-        LIMIT 50
-    `);
-    res.json(result.rows);
-});
-
-app.get('/', (req, res) => {
-    res.sendFile('index.html', { root: 'public' });
-});
-
-app.listen(PORT, () => {
-    console.log(`✅ Сервер на порту ${PORT}`);
-    console.log(`👑 Админ: admin / gtafak`);
-});
 });
 
 app.get('/api/leaderboard', async (req, res) => {
