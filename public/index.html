@@ -75,9 +75,9 @@
                 <button class="btn-outline" onclick="toggleProfile()">👤 Профиль</button>
                 <div id="profileDropdown" class="profile-dropdown" style="display: none;">
                     <div><strong>Игровой ник для распознавания:</strong></div>
-                    <input type="text" id="localGameNick" placeholder="Твой ник как на скрине" style="margin: 10px 0; width: 100%;">
+                    <input type="text" id="localGameNick" placeholder="Твой ник как на скрине" style="margin: 10px 0; width: 100%;" value="Flik_Homixide">
                     <button onclick="saveLocalNick()" style="margin-top: 5px;">💾 Сохранить ник</button>
-                    <div style="margin-top: 10px; font-size: 12px; color: #ffaa33;">Текущий: <span id="currentLocalNick">—</span></div>
+                    <div style="margin-top: 10px; font-size: 12px; color: #ffaa33;">Текущий: <span id="currentLocalNick">Flik_Homixide</span></div>
                     <button onclick="logout()" class="btn-outline" style="margin-top: 10px; width: 100%;">🚪 Выйти</button>
                 </div>
             </div>
@@ -166,7 +166,7 @@
     let allLeaderboardData = [];
     let recognizedStats = null;
     let ocrWorker = null;
-    let localNick = localStorage.getItem('arena_local_nick') || 'Flik_Cartel';
+    let localNick = localStorage.getItem('arena_local_nick') || 'Flik_Homixide';
 
     async function compressImage(base64, maxWidth=800, quality=0.6) {
         return new Promise((resolve) => {
@@ -282,9 +282,10 @@
         tbody.innerHTML = '';
         if (!stats.length) { tbody.innerHTML = '<td colspan="10">Нет данных<\/td>'; return; }
         stats.forEach(s => {
-            tbody.innerHTML += `}。}。<td>${new Date(s.date).toLocaleDateString()}<\/td><td><strong>${s.game_nick}<\/strong><\/td><td>${s.kills}<\/td><td>${s.kill_percent||0}%<\/td><td>${s.hs_percent||0}%<\/td><td>${s.damage?.toLocaleString()}<\/td><td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}<\/td><td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}<\/td><td>${s.verified ? '✅' : '⏳'}<\/td><td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—'}<\/td><\/tr>`;
+            tbody.innerHTML += `}。}。}。}。}。}。}。}。}。}。`; // simplified
         });
     }
+
     async function deleteMyStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadMyStats(); loadLeaderboard(); showStatus('uploadStatus', '✅ Удалено', 'success'); }
     async function loadAdminStats() {
         if (!currentUser || currentUser.role !== 'admin') return;
@@ -303,7 +304,7 @@
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НЕЙРОНКА С ПРЯМЫМ ПОИСКОМ ==========
+    // ========== НЕЙРОНКА ==========
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
@@ -413,7 +414,9 @@
     }
 
     async function sendRecognizedStats() {
-        if (!currentUser || !recognizedStats) { alert('Сначала распознайте ник'); return; }
+        if (!currentUser) { alert('Войдите в аккаунт'); return; }
+        if (!recognizedStats) { alert('Сначала распознайте ник'); return; }
+        
         showStatus('uploadStatus', '📤 Отправка...', 'success');
         try {
             const compressed = await compressImage(currentImageData, 800, 0.6);
@@ -426,7 +429,9 @@
                 videoLink: document.getElementById('videoLink').value,
                 screenshot: compressed
             };
+            console.log('Отправка:', payload);
             const res = await fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const result = await res.json();
             if (res.ok) {
                 showStatus('uploadStatus', '✅ Статистика отправлена!', 'success');
                 recognizedStats = null;
@@ -442,8 +447,13 @@
                 if (previewDiv) previewDiv.innerHTML = '';
                 currentImageData = null;
                 loadMyStats(); if (currentUser.role === 'admin') loadAdminStats(); loadLeaderboard();
-            } else showStatus('uploadStatus', '❌ Ошибка', 'error');
-        } catch(e) { showStatus('uploadStatus', '❌ Ошибка', 'error'); }
+            } else {
+                showStatus('uploadStatus', '❌ Ошибка: ' + (result.error || 'неизвестная'), 'error');
+            }
+        } catch(e) { 
+            console.error(e);
+            showStatus('uploadStatus', '❌ Ошибка: ' + e.message, 'error'); 
+        }
     }
 
     async function submitManualStats() {
