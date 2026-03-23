@@ -201,7 +201,7 @@
         } catch(e) { console.log(e); }
     }
 
-    // ========== НОВАЯ АДМИН-ПАНЕЛЬ ==========
+    // ========== АДМИН-ПАНЕЛЬ - ПРОСТЕЙШАЯ ВЕРСИЯ ==========
     async function loadAdminStats() {
         console.log('loadAdminStats вызвана');
         if (!currentUser) {
@@ -218,38 +218,41 @@
             console.log('Получено записей:', allStats.length);
             const unverified = allStats.filter(s => !s.verified);
             console.log('Неподтверждённых:', unverified.length);
-            const container = document.getElementById('adminList');
-            container.innerHTML = '';
+            
+            // Простейший вывод через innerHTML
+            let html = '';
             if (unverified.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:40px;">✅ Нет неподтверждённой статистики</div>';
-                return;
-            }
-            for (let s of unverified) {
-                container.innerHTML += `
-                    <div class="admin-card">
-                        <div class="stat-header">
-                            <span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span>
-                            <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
-                        </div>
-                        <div class="stat-numbers">
-                            <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 10px; flex-wrap: wrap;">
-                            <div style="display: flex; gap: 8px;">
-                                ${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : ''}
-                                ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
+                html = '<div style="text-align:center; padding:40px;">✅ Нет неподтверждённой статистики</div>';
+            } else {
+                for (let s of unverified) {
+                    html += `
+                        <div class="admin-card">
+                            <div class="stat-header">
+                                <span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span>
+                                <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
                             </div>
-                            <div>
-                                <button onclick="verifyStat(${s.id})" style="background:#2e7d32;">✅</button>
-                                <button onclick="deleteStat(${s.id})" style="background:#c62828;">🗑️</button>
+                            <div class="stat-numbers">
+                                <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div>
+                                <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div>
+                                <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div>
+                                <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 10px; flex-wrap: wrap;">
+                                <div style="display: flex; gap: 8px;">
+                                    ${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : ''}
+                                    ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
+                                </div>
+                                <div>
+                                    <button onclick="verifyStat(${s.id})" style="background:#2e7d32;">✅</button>
+                                    <button onclick="deleteStat(${s.id})" style="background:#c62828;">🗑️</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
+            document.getElementById('adminList').innerHTML = html;
+            console.log('Админ-панель обновлена');
         } catch(e) { 
             console.log('Ошибка:', e);
             document.getElementById('adminList').innerHTML = `<div style="text-align:center; padding:40px; color:#ff6b6b;">❌ Ошибка: ${e.message}</div>`;
