@@ -1,154 +1,160 @@
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
+import express from 'express';
+import pkg from 'pg';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import cors from 'cors';
+
+const { Pool } = pkg;
 
 const app = express();
-app.use(express.json({ limit: '50mb' }));
+app.use(cors());
+app.use(express.json());
 app.use(express.static('public'));
 
-const SECRET = 'super_secret_key';
-
 const pool = new Pool({
-    connectionString: 'postgresql://postgres:1234@localhost:5432/arena'
+  connectionString: process.env.DATABASE_URL
 });
 
-/// REGISTER
+const SECRET = 'supersecret';
+
+// ================= AUTH =================
+
 app.post('/api/register', async (req, res) => {
-    const { username, password, gameNick } = req.body;
+  const { username, password, gameNick } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Заполни все поля' });
-    }
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Нет данных' });
+  }
 
-    try {
-        const hash = bcrypt.hashSync(password, 10);
+  const hash = await bcrypt.hash(password, 10);
 
-        await pool.query(
-            'INSERT INTO users(username,password,game_nick) VALUES($1,$2,$3)',
-            [username, hash, gameNick || username]
-        );
+  try {
+    const user = await pool.query(
+      `INSERT INTO users (username, password, game_nick)
+       VALUES ($1,$2,$3) RETURNING *`,
+      [username, hash, gameNick]
+    );
 
-        res.json({ success: true });
-
-    } catch {
-        res.status(400).json({ error: 'Пользователь уже существует' });
-    }
+    res.json(user.rows[0]);
+  } catch (e) {
+    res.status(400).json({ error: 'Пользователь уже существует' });
+  }
 });
 
-/// LOGIN
 app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
 
-    const result = await pool.query(
-        'SELECT * FROM users WHERE username=$1',
-        [username]
-    );
+  const user = await pool.query(
+    `SELECT * FROM users WHERE username=$1`,
+    [username]
+  );
 
-    if (!result.rows.length) {
-        return res.status(400).json({ error: 'Нет пользователя' });
-    }
+  if (!user.rows.length) {
+    return res.status(400).json({ error: 'Нет пользователя' });
+  }
 
-    const user = result.rows[0];
+  const valid = await bcrypt.compare(password, user.rows[0].password);
+  if (!valid) return res.status(400).json({ error: 'Неверный пароль' });
 
-    if (!bcrypt.compareSync(password, user.password)) {
-        return res.status(400).json({ error: 'Неверный пароль' });
-    }
+  const token = jwt.sign(user.rows[0], SECRET);
 
-    const token = jwt.sign(
-        { id: user.id, username: user.username, role: user.role },
-        SECRET
-    );
-
-    res.json({ token, user });
+  res.json({
+    token,
+    user: user.rows[0]
+  });
 });
 
-/// ADD STATS
-app.post('/api/stats', async (req, res) => {
-    const token = req.headers.authorization;
-    if (!token) return res.sendStatus(401);
+// ================= MIDDLEWARE =================
 
-    let user;
-    try {
-        user = jwt.verify(token, SECRET);
-    } catch {
-        return res.sendStatus(401);
-    }
+function auth(req, res, next) {
+  const token = req.headers.authorization;
+  if (!token) return res.sendStatus(401);
 
-    const { kills, killPercent, hsPercent, damage, videoLink, screenshot } = req.body;
+  try {
+    req.user = jwt.verify(token, SECRET);
+    next();
+  } catch {
+    res.sendStatus(403);
+  }
+}
 
-    await pool.query(
-        `INSERT INTO stats(user_id,kills,kill_percent,hs_percent,damage,video_link,screenshot)
-         VALUES($1,$2,$3,$4,$5,$6,$7)`,
-        [user.id, kills, killPercent, hsPercent, damage, videoLink, screenshot]
-    );
+// ================= STATS =================
 
-    res.json({ success: true });
+app.post('/api/stats', auth, async (req, res) => {
+  const { kills, damage, videoLink, screenshot } = req.body;
+
+  await pool.query(
+    `INSERT INTO stats (user_id, kills, damage, video_link, screenshot)
+     VALUES ($1,$2,$3,$4,$5)`,
+    [req.user.id, kills, damage, videoLink, screenshot]
+  );
+
+  res.json({ ok: true });
 });
 
-/// MY STATS
-app.get('/api/stats/my', async (req, res) => {
-    const token = req.headers.authorization;
-    if (!token) return res.sendStatus(401);
+app.get('/api/stats/my', auth, async (req, res) => {
+  const data = await pool.query(
+    `SELECT * FROM stats WHERE user_id=$1 ORDER BY id DESC`,
+    [req.user.id]
+  );
 
-    const user = jwt.verify(token, SECRET);
-
-    const result = await pool.query(`
-        SELECT s.*, u.game_nick 
-        FROM stats s
-        JOIN users u ON u.id=s.user_id
-        WHERE user_id=$1
-    `, [user.id]);
-
-    res.json(result.rows);
+  res.json(data.rows);
 });
 
-/// ADMIN
-app.get('/api/stats/all', async (req, res) => {
-    const token = req.headers.authorization;
-    const user = jwt.verify(token, SECRET);
+app.get('/api/stats/all', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.sendStatus(403);
 
-    if (user.role !== 'admin') return res.sendStatus(403);
+  const data = await pool.query(`
+    SELECT s.*, u.game_nick
+    FROM stats s
+    JOIN users u ON u.id = s.user_id
+    ORDER BY s.id DESC
+  `);
 
-    const result = await pool.query(`
-        SELECT s.*, u.game_nick 
-        FROM stats s
-        JOIN users u ON u.id=s.user_id
-    `);
-
-    res.json(result.rows);
+  res.json(data.rows);
 });
 
-app.put('/api/stats/:id/verify', async (req, res) => {
-    const user = jwt.verify(req.headers.authorization, SECRET);
-    if (user.role !== 'admin') return res.sendStatus(403);
+app.put('/api/stats/:id/verify', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.sendStatus(403);
 
-    await pool.query('UPDATE stats SET verified=true WHERE id=$1', [req.params.id]);
-    res.json({ success: true });
+  await pool.query(
+    `UPDATE stats SET verified=true WHERE id=$1`,
+    [req.params.id]
+  );
+
+  res.json({ ok: true });
 });
 
-app.delete('/api/stats/:id', async (req, res) => {
-    const user = jwt.verify(req.headers.authorization, SECRET);
-    if (user.role !== 'admin') return res.sendStatus(403);
+app.delete('/api/stats/:id', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.sendStatus(403);
 
-    await pool.query('DELETE FROM stats WHERE id=$1', [req.params.id]);
-    res.json({ success: true });
+  await pool.query(
+    `DELETE FROM stats WHERE id=$1`,
+    [req.params.id]
+  );
+
+  res.json({ ok: true });
 });
 
-/// LEADERBOARD
+// ================= LEADERBOARD =================
+
 app.get('/api/leaderboard', async (req, res) => {
-    const result = await pool.query(`
-        SELECT u.game_nick,
-               SUM(kills) as kills,
-               SUM(damage) as damage
-        FROM stats s
-        JOIN users u ON u.id=s.user_id
-        WHERE verified=true
-        GROUP BY u.game_nick
-        ORDER BY kills DESC
-    `);
+  const data = await pool.query(`
+    SELECT u.game_nick,
+           MAX(s.kills) as kills,
+           MAX(s.damage) as damage
+    FROM stats s
+    JOIN users u ON u.id = s.user_id
+    WHERE s.verified=true
+    GROUP BY u.game_nick
+    ORDER BY kills DESC
+  `);
 
-    res.json(result.rows);
+  res.json(data.rows);
 });
 
-app.listen(3000, () => console.log('🚀 Server started'));
+// ================= START =================
+
+app.listen(3000, () => {
+  console.log('Server running on 3000');
+});
