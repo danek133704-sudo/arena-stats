@@ -55,9 +55,8 @@
         .auth-form.active { display: block; }
         .auth-form input { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 10px 0; }
         .preview-image { max-width: 100%; max-height: 200px; border-radius: 16px; cursor: pointer; margin-top: 10px; }
-        /* Убираем возможные скрытия */
-        #adminList { display: block !important; visibility: visible !important; opacity: 1 !important; min-height: 200px; background: #1a1a1a; padding: 15px; border-radius: 16px; margin-top: 15px; }
-        .admin-card { display: block !important; visibility: visible !important; }
+        #adminList { min-height: 200px; background: #1a1a1a; padding: 15px; border-radius: 16px; margin-top: 15px; }
+        .admin-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #ffd966; }
         @media (max-width: 700px) { .stats-grid { grid-template-columns: 1fr; } .header-content { flex-direction: column; text-align: center; } }
     </style>
 </head>
@@ -115,12 +114,14 @@
         </div>
         <div id="leaderboardTab" class="tab-content active"><input type="text" id="searchPlayer" placeholder="🔍 Поиск игрока..." style="margin-bottom: 15px;"><div id="leaderboardList"></div></div>
         <div id="mystatsTab" class="tab-content"><div id="myStatsList"></div></div>
-        <div id="adminTabContent" class="tab-content">
-            <div style="background: #2c2c2c; padding: 10px; border-radius: 12px; margin-bottom: 15px;">
-                <button onclick="loadAdminStats()" style="background:#ffaa33; color:#000;">🔄 ОБНОВИТЬ АДМИН-ПАНЕЛЬ</button>
-            </div>
-            <div id="adminList" class="stats-grid" style="min-height: 200px; background: #1a1a1a; padding: 15px; border-radius: 16px;"></div>
-        </div>
+        <div id="adminTabContent" class="tab-content"></div>
+    </div>
+
+    <!-- ОТДЕЛЬНЫЙ БЛОК АДМИН-ПАНЕЛИ, ВСЕГДА ВИДИМЫЙ ДЛЯ АДМИНА -->
+    <div id="adminPanelBlock" class="card admin-section" style="display: none;">
+        <h2 style="color: #ffd966; margin-bottom: 20px;">🔧 АДМИН-ПАНЕЛЬ (неподтверждённая статистика)</h2>
+        <button onclick="loadAdminStatsDirect()" style="margin-bottom: 15px; background:#ffaa33;">🔄 ОБНОВИТЬ</button>
+        <div id="adminDirectList" class="stats-grid"></div>
     </div>
 </div>
 
@@ -156,8 +157,12 @@
             document.getElementById('userInfo').style.display = 'inline-block';
             document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
             document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username;
-            if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block';
-            loadLeaderboard(); loadMyStats(); loadAdminStats();
+            if (currentUser.role === 'admin') {
+                document.getElementById('adminTab').style.display = 'inline-block';
+                document.getElementById('adminPanelBlock').style.display = 'block';
+                loadAdminStatsDirect();
+            }
+            loadLeaderboard(); loadMyStats();
         } else showMsg('loginMsg', `❌ ${data.error}`, true);
     }
 
@@ -176,7 +181,6 @@
         document.getElementById(tab + 'Tab').classList.add('active');
         if (tab === 'leaderboard') loadLeaderboard();
         if (tab === 'mystats') loadMyStats();
-        if (tab === 'admin') loadAdminStats();
     }
 
     async function loadLeaderboard() {
@@ -209,31 +213,24 @@
         } catch(e) { console.log(e); }
     }
 
-    // АДМИН-ПАНЕЛЬ С ПРЯМЫМ ВЫВОДОМ
-    async function loadAdminStats() {
-        console.log('loadAdminStats вызвана');
-        if (!currentUser) {
-            document.getElementById('adminList').innerHTML = '<div style="text-align:center; padding:40px;">🔐 Войдите в аккаунт</div>';
-            return;
-        }
-        if (currentUser.role !== 'admin') {
-            document.getElementById('adminList').innerHTML = '<div style="text-align:center; padding:40px;">🔐 Требуются права администратора</div>';
-            return;
-        }
+    // ПРЯМАЯ ЗАГРУЗКА АДМИН-ПАНЕЛИ
+    async function loadAdminStatsDirect() {
+        console.log('loadAdminStatsDirect вызвана');
+        if (!currentUser || currentUser.role !== 'admin') return;
         try {
             const res = await fetch('/api/stats/all');
             const allStats = await res.json();
-            console.log('Получено записей:', allStats.length);
             const unverified = allStats.filter(s => !s.verified);
-            console.log('Неподтверждённых:', unverified.length);
+            const container = document.getElementById('adminDirectList');
+            if (!container) return;
             
-            let html = '<h3 style="color:#ffd966; margin-bottom:15px;">📋 НЕПОДТВЕРЖДЁННАЯ СТАТИСТИКА</h3>';
+            let html = '';
             if (unverified.length === 0) {
-                html += '<div style="text-align:center; padding:40px;">✅ Нет неподтверждённой статистики</div>';
+                html = '<div style="text-align:center; padding:40px;">✅ Нет неподтверждённой статистики</div>';
             } else {
                 for (let s of unverified) {
                     html += `
-                        <div class="admin-card" style="margin-bottom: 15px;">
+                        <div class="admin-card">
                             <div class="stat-header">
                                 <span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span>
                                 <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
@@ -258,16 +255,13 @@
                     `;
                 }
             }
-            document.getElementById('adminList').innerHTML = html;
+            container.innerHTML = html;
             console.log('Админ-панель обновлена, записей:', unverified.length);
-        } catch(e) { 
-            console.log('Ошибка:', e);
-            document.getElementById('adminList').innerHTML = `<div style="text-align:center; padding:40px; color:#ff6b6b;">❌ Ошибка: ${e.message}</div>`;
-        }
+        } catch(e) { console.log('Ошибка:', e); }
     }
 
-    async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
-    async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Удалено', false); }
+    async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
+    async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Удалено', false); }
 
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
@@ -331,7 +325,7 @@
             document.getElementById('fileInput').value = '';
             document.getElementById('preview').innerHTML = '';
             currentImageData = null;
-            loadMyStats(); loadAdminStats(); loadLeaderboard();
+            loadMyStats(); loadAdminStatsDirect(); loadLeaderboard();
         } else { const err = await res.json(); showMsg('uploadMsg', `❌ ${err.error}`, true); }
     }
 
@@ -344,8 +338,12 @@
         document.getElementById('userInfo').style.display = 'inline-block';
         document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
         document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username;
-        if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block';
-        loadLeaderboard(); loadMyStats(); loadAdminStats();
+        if (currentUser.role === 'admin') {
+            document.getElementById('adminTab').style.display = 'inline-block';
+            document.getElementById('adminPanelBlock').style.display = 'block';
+            loadAdminStatsDirect();
+        }
+        loadLeaderboard(); loadMyStats();
     } else { document.getElementById('currentNickDisplay').innerText = localNick; loadLeaderboard(); }
     document.getElementById('searchPlayer')?.addEventListener('input', () => loadLeaderboard());
 </script>
