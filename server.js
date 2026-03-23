@@ -18,12 +18,44 @@ function loadData() {
             data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
             console.log(`📁 Загружено: ${data.users.length} пользователей, ${data.stats.length} записей`);
         } else {
+            // Создаём демо-данные для админки
+            const adminHash = bcrypt.hashSync('gtafak', 10);
             data = {
-                users: [{ id: 1, username: 'admin', password: bcrypt.hashSync('gtafak', 10), game_nick: 'Admin', role: 'admin' }],
-                stats: []
+                users: [
+                    { id: 1, username: 'admin', password: adminHash, game_nick: 'Admin', role: 'admin' },
+                    { id: 2, username: 'player1', password: bcrypt.hashSync('123', 10), game_nick: 'Flik_Homixide', role: 'user' }
+                ],
+                stats: [
+                    {
+                        id: 1001,
+                        username: 'player1',
+                        game_nick: 'Flik_Homixide',
+                        kills: 142,
+                        kill_percent: 33,
+                        hs_percent: 5,
+                        damage: 16257,
+                        video_link: '',
+                        screenshot: '',
+                        verified: false,
+                        date: new Date().toISOString()
+                    },
+                    {
+                        id: 1002,
+                        username: 'player2',
+                        game_nick: 'Andrey_Chikatilov',
+                        kills: 80,
+                        kill_percent: 26,
+                        hs_percent: 10,
+                        damage: 10948,
+                        video_link: '',
+                        screenshot: '',
+                        verified: false,
+                        date: new Date().toISOString()
+                    }
+                ]
             };
             saveData();
-            console.log('📁 Создан новый файл данных');
+            console.log('📁 Создан новый файл данных с демо-записями для админки');
         }
     } catch(e) { console.error('Ошибка загрузки:', e); }
 }
@@ -180,4 +212,5 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ Сервер на порту ${PORT}`);
     console.log(`👑 Админ: admin / gtafak`);
+    console.log(`📊 В админ-панели уже есть ${data.stats.filter(s => !s.verified).length} неподтверждённых записей`);
 });
