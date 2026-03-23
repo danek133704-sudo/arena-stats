@@ -10,72 +10,47 @@
         .header { background: #1a1a1a; padding: 1rem 2rem; border-bottom: 1px solid #ffd966; position: sticky; top: 0; z-index: 100; }
         .header-content { max-width: 1300px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .logo h1 { font-size: 1.8rem; background: linear-gradient(135deg, #ffd966, #ffaa33); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .logo p { font-size: 0.7rem; color: #ffd966aa; }
         .telegram-link { background: #2c2c2c; padding: 6px 16px; border-radius: 40px; border: 1px solid #ffd966; }
         .telegram-link a { color: #ffd966; text-decoration: none; }
-        .telegram-link:hover { background: #ffd966; }
-        .telegram-link:hover a { color: #0a0a0a; }
         button { background: #ffd966; border: none; padding: 8px 20px; border-radius: 40px; font-weight: bold; cursor: pointer; color: #0a0a0a; transition: 0.2s; }
         button:hover { transform: scale(0.97); background: #ffaa33; }
         .btn-outline { background: transparent; border: 1px solid #ffd966; color: #ffd966; }
-        .btn-outline:hover { background: #ffd96622; }
         .container { max-width: 1300px; margin: 0 auto; padding: 2rem; }
         .card { background: #1a1a1a; border-radius: 24px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #ffd96633; }
         .upload-area { border: 2px dashed #ffd966; border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; background: #0a0a0a; }
-        .upload-area:hover { background: #ffd96611; }
         input { width: 100%; padding: 10px 16px; background: #2c2c2c; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 8px 0; }
-        input:focus { outline: none; border-color: #ffd966; }
         .tabs { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
         .tab { padding: 8px 24px; border-radius: 40px; cursor: pointer; background: #2c2c2c; color: #aaa; transition: 0.2s; }
         .tab.active { background: #ffd966; color: #0a0a0a; font-weight: bold; }
-        .tab:hover { background: #ffd96633; color: #ffd966; }
-        .tab-content { display: none; animation: fadeIn 0.2s; }
+        .tab-content { display: none; }
         .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .stat-card, .admin-card { background: #0a0a0a; border-radius: 20px; padding: 1rem; margin-bottom: 1rem; border-left: 4px solid #ffd966; transition: 0.2s; }
-        .stat-card:hover, .admin-card:hover { transform: translateX(5px); background: #1a1a1a; }
-        .stat-header { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #ffd96633; }
+        .stat-card, .admin-card { background: #0a0a0a; border-radius: 20px; padding: 1rem; margin-bottom: 1rem; border-left: 4px solid #ffd966; }
+        .stat-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
         .stat-nick { font-size: 1.1rem; font-weight: bold; color: #ffd966; }
-        .stat-date { font-size: 0.7rem; color: #ffd966aa; }
         .stat-numbers { display: flex; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
-        .stat-number { background: #1a1a1a; padding: 6px 12px; border-radius: 16px; text-align: center; flex: 1; min-width: 70px; }
+        .stat-number { background: #1a1a1a; padding: 6px 12px; border-radius: 16px; text-align: center; flex: 1; }
         .stat-number-value { font-size: 1.2rem; font-weight: bold; color: #ffd966; }
-        .stat-number-label { font-size: 0.65rem; color: #ffd966aa; }
-        .stat-status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
-        .status-verified { background: #2e7d3240; color: #4caf50; border: 1px solid #4caf50; }
-        .status-pending { background: #ff980040; color: #ff9800; border: 1px solid #ff9800; }
-        .screenshot-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 10px; cursor: pointer; }
-        .leaderboard-card { background: #0a0a0a; border-radius: 16px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
-        .leaderboard-card:hover { background: #1a1a1a; transform: translateX(5px); }
+        .screenshot-thumb { width: 45px; height: 45px; border-radius: 10px; cursor: pointer; }
+        .leaderboard-card { background: #0a0a0a; border-radius: 16px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
         .leaderboard-rank { font-size: 1.4rem; font-weight: bold; width: 45px; text-align: center; }
         .rank-1 { color: gold; }
         .rank-2 { color: silver; }
         .rank-3 { color: #cd7f32; }
-        .leaderboard-name { font-weight: bold; }
-        .leaderboard-stats { display: flex; gap: 12px; font-size: 0.7rem; color: #ffd966aa; margin-top: 3px; }
-        .profile-menu { position: relative; display: inline-block; }
         .profile-dropdown { position: absolute; right: 0; top: 45px; background: #1a1a1a; border: 1px solid #ffd966; border-radius: 20px; padding: 1rem; width: 260px; z-index: 200; }
-        .nick-edit { display: flex; gap: 8px; margin: 10px 0; }
-        .nick-edit input { margin: 0; padding: 6px 10px; }
-        .stats-summary { margin-top: 10px; padding-top: 10px; border-top: 1px solid #ffd96633; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-        .stats-summary-item { background: #0a0a0a; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; }
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; cursor: pointer; }
-        .modal img { max-width: 90%; max-height: 90%; border-radius: 16px; }
+        .debug-panel { background: #0a0a0a; padding: 10px; border-radius: 16px; font-family: monospace; font-size: 11px; color: #0f0; max-height: 300px; overflow: auto; margin-top: 15px; white-space: pre-wrap; }
         .status-msg { padding: 8px; border-radius: 40px; margin-top: 10px; text-align: center; }
-        .success { background: #2e7d3240; color: #4caf50; border: 1px solid #4caf50; }
-        .error { background: #c6282840; color: #ff6b6b; border: 1px solid #c62828; }
-        @media (max-width: 700px) { .header-content { flex-direction: column; text-align: center; } .stat-numbers { flex-direction: column; } }
+        .success { background: #2e7d3240; color: #4caf50; }
+        .error { background: #c6282840; color: #ff6b6b; }
+        .profile-menu { position: relative; display: inline-block; }
+        @media (max-width: 700px) { .header-content { flex-direction: column; } }
     </style>
 </head>
 <body>
 
 <div class="header">
     <div class="header-content">
-        <div class="logo">
-            <h1>⚔️ ARENA STATS</h1>
-            <p>Трекер статистики | Общий лидерборд</p>
-        </div>
-        <div class="telegram-link"><a href="https://t.me/flikfak" target="_blank">🤝 @flikfak — сотрудничество</a></div>
+        <div class="logo"><h1>⚔️ ARENA STATS</h1><p>Трекер статистики | Общий лидерборд</p></div>
+        <div class="telegram-link"><a href="https://t.me/flikfak" target="_blank">🤝 @flikfak</a></div>
         <div id="authArea">
             <button id="showAuthBtn" onclick="showAuthModal()">🔐 Вход / Регистрация</button>
             <div id="userInfo" style="display: none;">
@@ -84,16 +59,8 @@
                     <button class="btn-outline" onclick="toggleProfile()">👤 Профиль</button>
                     <div id="profileDropdown" class="profile-dropdown" style="display: none;">
                         <div><strong>Игровой ник:</strong> <span id="currentNickDisplay">Flik_Homixide</span></div>
-                        <div class="nick-edit">
-                            <input type="text" id="nickInput" placeholder="Новый ник">
-                            <button onclick="saveNick()">Сохранить</button>
-                        </div>
-                        <div class="stats-summary" id="userStatsSummary">
-                            <div class="stats-summary-item">💥 Макс урон: —</div>
-                            <div class="stats-summary-item">📊 Средний урон: —</div>
-                            <div class="stats-summary-item">🎯 Всего убийств: —</div>
-                        </div>
-                        <button onclick="logout()" class="btn-outline" style="margin-top: 10px; width: 100%;">🚪 Выйти</button>
+                        <div><input type="text" id="nickInput" placeholder="Новый ник" style="margin: 10px 0;"><button onclick="saveNick()">Сохранить</button></div>
+                        <button onclick="logout()" class="btn-outline">🚪 Выйти</button>
                     </div>
                 </div>
             </div>
@@ -103,7 +70,7 @@
 
 <div class="container">
     <div id="authModal" class="card" style="display: none;">
-        <div class="tabs" style="border: none;">
+        <div class="tabs">
             <div class="tab active" onclick="switchAuth('login')">Вход</div>
             <div class="tab" onclick="switchAuth('register')">Регистрация</div>
         </div>
@@ -129,7 +96,7 @@
             <p>Нажми или перетащи скриншот</p>
             <input type="file" id="fileInput" hidden accept="image/*">
         </div>
-        <div id="preview" style="text-align: center;"></div>
+        <div id="preview"></div>
         <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео">
         <div id="ocrResult" style="background: #0a0a0a; padding: 12px; border-radius: 20px; margin: 12px 0; display: none;"></div>
         <button id="sendBtn" style="display: none;" onclick="sendStats()">📤 Отправить</button>
@@ -143,17 +110,14 @@
             <div class="tab" id="adminTab" style="display: none;" onclick="showTab('admin')">🔧 АДМИН-ПАНЕЛЬ</div>
         </div>
 
-        <div id="leaderboardTab" class="tab-content active">
-            <input type="text" id="searchPlayer" placeholder="🔍 Поиск игрока..." style="margin-bottom: 15px;">
-            <div id="leaderboardList"></div>
-        </div>
-
-        <div id="mystatsTab" class="tab-content">
-            <div id="myStatsList"></div>
-        </div>
-
+        <div id="leaderboardTab" class="tab-content active"><div id="leaderboardList"></div></div>
+        <div id="mystatsTab" class="tab-content"><div id="myStatsList"></div></div>
         <div id="adminTabContent" class="tab-content">
+            <div style="margin-bottom: 15px;">
+                <button onclick="forceLoadAdminStats()" style="background:#ffaa33;">🔄 ПРИНУДИТЕЛЬНО ОБНОВИТЬ</button>
+            </div>
             <div id="adminList"></div>
+            <div id="adminDebugPanel" class="debug-panel"></div>
         </div>
     </div>
 </div>
@@ -166,29 +130,272 @@
     let ocrWorker = null;
     let localNick = localStorage.getItem('arena_nick') || 'Flik_Homixide';
 
-    function log(msg) { console.log(msg); }
-    function showMsg(elId, msg, isError) { const el = document.getElementById(elId); if (el) { el.innerHTML = `<div class="status-msg ${isError ? 'error' : 'success'}">${msg}</div>`; setTimeout(() => el.innerHTML = '', 4000); } }
-    function saveNick() { const newNick = document.getElementById('nickInput').value.trim(); if (!newNick) return; localNick = newNick; localStorage.setItem('arena_nick', localNick); document.getElementById('currentNickDisplay').innerText = localNick; document.getElementById('nickInput').value = ''; showMsg('uploadMsg', `✅ Ник сохранён: ${localNick}`, false); if (currentUser) updateUserStats(); }
+    function log(msg) { 
+        const debugDiv = document.getElementById('adminDebugPanel');
+        if (debugDiv) debugDiv.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+        console.log(msg);
+    }
+
+    function showMsg(elId, msg, isError) { 
+        const el = document.getElementById(elId); 
+        if (el) { el.innerHTML = `<div class="status-msg ${isError ? 'error' : 'success'}">${msg}</div>`; setTimeout(() => el.innerHTML = '', 4000); } 
+    }
+
+    function saveNick() { 
+        const newNick = document.getElementById('nickInput').value.trim(); 
+        if (!newNick) return; 
+        localNick = newNick; 
+        localStorage.setItem('arena_nick', localNick); 
+        document.getElementById('currentNickDisplay').innerText = localNick; 
+        showMsg('uploadMsg', `✅ Ник сохранён: ${localNick}`, false); 
+    }
     function getCurrentNick() { return localNick || (currentUser?.gameNick) || (currentUser?.username) || ''; }
-    async function updateUserStats() { if (!currentUser) return; try { const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } }); const stats = await res.json(); const verified = stats.filter(s => s.verified); if (verified.length === 0) { document.getElementById('userStatsSummary').innerHTML = `<div class="stats-summary-item">💥 Макс урон: —</div><div class="stats-summary-item">📊 Средний урон: —</div><div class="stats-summary-item">🎯 Всего убийств: —</div>`; return; } const maxDamage = Math.max(...verified.map(s => s.damage || 0)); const avgDamage = Math.round(verified.reduce((a, b) => a + (b.damage || 0), 0) / verified.length); const totalKills = verified.reduce((a, b) => a + (b.kills || 0), 0); document.getElementById('userStatsSummary').innerHTML = `<div class="stats-summary-item">💥 Макс урон: ${maxDamage.toLocaleString()}</div><div class="stats-summary-item">📊 Средний урон: ${avgDamage.toLocaleString()}</div><div class="stats-summary-item">🎯 Всего убийств: ${totalKills}</div>`; } catch(e) { log(e); } }
-    async function doRegister() { const payload = { username: document.getElementById('regUsername').value, password: document.getElementById('regPassword').value, gameNick: document.getElementById('regGameNick').value }; const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const data = await res.json(); if (res.ok) { showMsg('regMsg', '✅ Регистрация успешна! Войдите.', false); switchAuth('login'); } else { showMsg('regMsg', `❌ ${data.error}`, true); } }
-    async function doLogin() { const payload = { username: document.getElementById('loginUsername').value, password: document.getElementById('loginPassword').value }; const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const data = await res.json(); if (res.ok) { currentUser = data.user; localStorage.setItem('user', JSON.stringify(currentUser)); document.getElementById('authModal').style.display = 'none'; document.getElementById('uploadBlock').style.display = 'block'; document.getElementById('showAuthBtn').style.display = 'none'; document.getElementById('userInfo').style.display = 'inline-block'; document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`; document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username; if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block'; log(`✅ Вход: ${currentUser.username}`); loadLeaderboard(); loadMyStats(); if (currentUser.role === 'admin') loadAdminStats(); updateUserStats(); } else { showMsg('loginMsg', `❌ ${data.error}`, true); } }
+
+    async function doRegister() { 
+        const payload = { username: document.getElementById('regUsername').value, password: document.getElementById('regPassword').value, gameNick: document.getElementById('regGameNick').value }; 
+        const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
+        const data = await res.json(); 
+        if (res.ok) { showMsg('regMsg', '✅ Регистрация успешна! Войдите.', false); switchAuth('login'); } 
+        else showMsg('regMsg', `❌ ${data.error}`, true); 
+    }
+
+    async function doLogin() { 
+        const payload = { username: document.getElementById('loginUsername').value, password: document.getElementById('loginPassword').value }; 
+        const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
+        const data = await res.json(); 
+        if (res.ok) { 
+            currentUser = data.user; 
+            localStorage.setItem('user', JSON.stringify(currentUser)); 
+            document.getElementById('authModal').style.display = 'none'; 
+            document.getElementById('uploadBlock').style.display = 'block'; 
+            document.getElementById('showAuthBtn').style.display = 'none'; 
+            document.getElementById('userInfo').style.display = 'inline-block'; 
+            document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`; 
+            document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username; 
+            if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block'; 
+            log(`✅ Вход: ${currentUser.username} (${currentUser.role})`); 
+            loadLeaderboard(); 
+            loadMyStats(); 
+            forceLoadAdminStats(); 
+        } else { showMsg('loginMsg', `❌ ${data.error}`, true); } 
+    }
+
     function logout() { currentUser = null; localStorage.removeItem('user'); location.reload(); }
-    function showAuthModal() { const modal = document.getElementById('authModal'); modal.style.display = modal.style.display === 'none' ? 'block' : 'none'; }
+    function toggleProfile() { const d = document.getElementById('profileDropdown'); d.style.display = d.style.display === 'none' ? 'block' : 'none'; }
+    function showAuthModal() { document.getElementById('authModal').style.display = 'flex'; }
     function switchAuth(type) { document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none'; document.getElementById('registerForm').style.display = type === 'register' ? 'block' : 'none'; }
-    function toggleProfile() { const d = document.getElementById('profileDropdown'); d.style.display = d.style.display === 'none' ? 'block' : 'none'; if (currentUser) updateUserStats(); }
-    function showTab(tab) { document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById(tab + 'Tab').classList.add('active'); if (tab === 'leaderboard') loadLeaderboard(); if (tab === 'mystats') loadMyStats(); if (tab === 'admin' && currentUser?.role === 'admin') loadAdminStats(); }
-    async function loadLeaderboard() { try { const res = await fetch('/api/leaderboard'); const data = await res.json(); const container = document.getElementById('leaderboardList'); container.innerHTML = ''; if (!data.length) { container.innerHTML = '<div style="text-align:center; padding:30px;">🏆 Пока нет данных</div>'; return; } const searchTerm = document.getElementById('searchPlayer')?.value.toLowerCase() || ''; const filtered = data.filter(p => (p.game_nick || p.username).toLowerCase().includes(searchTerm)); filtered.slice(0, 30).forEach((p, i) => { const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : ''; container.innerHTML += `<div class="leaderboard-card"><div class="leaderboard-rank ${rankClass}">#${i+1}</div><div class="leaderboard-info"><div class="leaderboard-name">${escapeHtml(p.game_nick || p.username)}</div><div class="leaderboard-stats"><span>💀 ${p.kills}</span><span>⚡ ${p.damage?.toLocaleString()}</span></div></div></div>`; }); } catch(e) { log(e); } }
-    async function loadMyStats() { if (!currentUser) return; try { const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } }); const stats = await res.json(); const container = document.getElementById('myStatsList'); container.innerHTML = ''; if (!stats.length) { container.innerHTML = '<div style="text-align:center; padding:30px;">📭 Нет статистики. Загрузите скриншот!</div>'; return; } stats.forEach(s => { container.innerHTML += `<div class="stat-card"><div class="stat-header"><span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span><span class="stat-date">${new Date(s.date).toLocaleDateString()}</span></div><div class="stat-numbers"><div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div><div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div><div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div><div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div></div><div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;"><div><span class="stat-status ${s.verified ? 'status-verified' : 'status-pending'}">${s.verified ? '✅ Подтверждена' : '⏳ Ожидает'}</span></div><div>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : ''}${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}${!s.verified ? `<button onclick="deleteMyStat(${s.id})" style="background:#c62828; padding:3px 12px;">🗑️</button>` : ''}</div></div></div>`; }); } catch(e) { log(e); } }
-    async function deleteMyStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadMyStats(); loadLeaderboard(); updateUserStats(); showMsg('uploadMsg', '✅ Удалено', false); }
-    async function loadAdminStats() { if (!currentUser || currentUser.role !== 'admin') { const container = document.getElementById('adminList'); if (container) container.innerHTML = '<div style="text-align:center; padding:30px;">🔐 Требуются права администратора</div>'; return; } try { const res = await fetch('/api/stats/all'); const allStats = await res.json(); const unverified = allStats.filter(s => !s.verified); const container = document.getElementById('adminList'); container.innerHTML = ''; if (!unverified.length) { container.innerHTML = '<div style="text-align:center; padding:30px;">✅ Нет неподтверждённой статистики</div>'; return; } unverified.forEach(s => { container.innerHTML += `<div class="admin-card"><div class="stat-header"><span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span><span class="stat-date">${new Date(s.date).toLocaleDateString()}</span></div><div class="stat-numbers"><div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div><div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div><div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div><div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div></div><div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;"><div>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥 Видео</a>` : ''}${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}</div><div><button onclick="verifyStat(${s.id})" style="background:#2e7d32;">✅</button><button onclick="deleteStat(${s.id})" style="background:#c62828;">🗑️</button></div></div></div>`; }); } catch(e) { log(e); container.innerHTML = '<div style="text-align:center; padding:30px;">❌ Ошибка загрузки</div>'; } }
-    async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); updateUserStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
-    async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); updateUserStats(); showMsg('uploadMsg', '✅ Удалено', false); }
-    function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
+    function showTab(tab) { 
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); 
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); 
+        document.getElementById(tab + 'Tab').classList.add('active'); 
+        if (tab === 'leaderboard') loadLeaderboard(); 
+        if (tab === 'mystats') loadMyStats(); 
+        if (tab === 'admin') forceLoadAdminStats(); 
+    }
+
+    async function loadLeaderboard() { 
+        try { 
+            const res = await fetch('/api/leaderboard'); 
+            const data = await res.json(); 
+            const container = document.getElementById('leaderboardList'); 
+            container.innerHTML = ''; 
+            if (!data.length) { container.innerHTML = '<div style="text-align:center; padding:30px;">🏆 Пока нет данных</div>'; return; } 
+            data.slice(0, 30).forEach((p, i) => { 
+                const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : ''; 
+                container.innerHTML += `<div class="leaderboard-card"><div class="leaderboard-rank ${rankClass}">#${i+1}</div><div><div><b>${escapeHtml(p.game_nick || p.username)}</b></div><div>💀 ${p.kills} | ⚡ ${p.damage?.toLocaleString()}</div></div></div>`; 
+            }); 
+        } catch(e) { log('Leaderboard error: ' + e); } 
+    }
+
+    async function loadMyStats() { 
+        if (!currentUser) return; 
+        try { 
+            const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } }); 
+            const stats = await res.json(); 
+            const container = document.getElementById('myStatsList'); 
+            container.innerHTML = ''; 
+            if (!stats.length) { container.innerHTML = '<div style="text-align:center; padding:30px;">📭 Нет статистики</div>'; return; } 
+            stats.forEach(s => { 
+                container.innerHTML += `<div class="stat-card"><div><b>${escapeHtml(s.game_nick || s.username)}</b> <small>${new Date(s.date).toLocaleDateString()}</small></div><div>💀 ${s.kills} | 🎯 ${s.kill_percent||0}% | 💥 ${s.hs_percent||0}% | ⚡ ${s.damage?.toLocaleString()}</div><div>${s.verified ? '✅ Подтверждена' : '⏳ Ожидает'}</div></div>`; 
+            }); 
+        } catch(e) { log('MyStats error: ' + e); } 
+    }
+
+    // ПРИНУДИТЕЛЬНАЯ ЗАГРУЗКА АДМИНКИ С ЛОГАМИ
+    async function forceLoadAdminStats() { 
+        log('=== ПРИНУДИТЕЛЬНАЯ ЗАГРУЗКА АДМИН-ПАНЕЛИ ===');
+        log(`Пользователь: ${currentUser?.username}, роль: ${currentUser?.role}`);
+        
+        if (!currentUser) {
+            log('❌ Пользователь не залогинен');
+            document.getElementById('adminList').innerHTML = '<div style="text-align:center; padding:30px;">🔐 Войдите в аккаунт</div>';
+            return;
+        }
+        
+        if (currentUser.role !== 'admin') {
+            log('❌ Недостаточно прав (нужен admin)');
+            document.getElementById('adminList').innerHTML = '<div style="text-align:center; padding:30px;">🔐 Требуются права администратора</div>';
+            return;
+        }
+        
+        try {
+            log('📡 Отправка запроса /api/stats/all');
+            const res = await fetch('/api/stats/all');
+            const allStats = await res.json();
+            log(`📊 Получено ${allStats.length} записей`);
+            log(`📋 Данные: ${JSON.stringify(allStats).substring(0, 500)}`);
+            
+            const unverified = allStats.filter(s => !s.verified);
+            log(`⏳ Неподтверждённых: ${unverified.length}`);
+            
+            const container = document.getElementById('adminList');
+            container.innerHTML = '';
+            
+            if (unverified.length === 0) {
+                log('✅ Нет неподтверждённых записей');
+                container.innerHTML = '<div style="text-align:center; padding:30px;">✅ Нет неподтверждённой статистики</div>';
+            } else {
+                log(`🔄 Отображаю ${unverified.length} записей`);
+                for (let s of unverified) {
+                    container.innerHTML += `
+                        <div class="admin-card">
+                            <div class="stat-header">
+                                <span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span>
+                                <span>${new Date(s.date).toLocaleDateString()}</span>
+                            </div>
+                            <div class="stat-numbers">
+                                <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div>💀</div></div>
+                                <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div>🎯</div></div>
+                                <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div>💥</div></div>
+                                <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div>⚡</div></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                                <div>
+                                    ${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥 Видео</a>` : ''}
+                                    ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
+                                </div>
+                                <div>
+                                    <button onclick="verifyStat(${s.id})" style="background:#2e7d32;">✅</button>
+                                    <button onclick="deleteStat(${s.id})" style="background:#c62828;">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                log('✅ Отображение завершено');
+            }
+        } catch(e) { 
+            log(`❌ ОШИБКА: ${e.message}`);
+            document.getElementById('adminList').innerHTML = `<div style="text-align:center; padding:30px; color:#ff6b6b;">❌ Ошибка загрузки: ${e.message}</div>`;
+        }
+    }
+
+    async function verifyStat(id) { 
+        log(`🔧 Подтверждение записи ${id}`);
+        await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); 
+        forceLoadAdminStats(); 
+        loadLeaderboard(); 
+        loadMyStats(); 
+        showMsg('uploadMsg', '✅ Подтверждено', false); 
+    }
+    
+    async function deleteStat(id) { 
+        if (!confirm('Удалить?')) return; 
+        log(`🗑️ Удаление записи ${id}`);
+        await fetch(`/api/stats/${id}`, { method: 'DELETE' }); 
+        forceLoadAdminStats(); 
+        loadLeaderboard(); 
+        loadMyStats(); 
+        showMsg('uploadMsg', '✅ Удалено', false); 
+    }
+    
+    function showFullImage(src) { 
+        const m = document.createElement('div'); 
+        m.className = 'modal'; 
+        m.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:1000;cursor:pointer;'; 
+        m.innerHTML = `<img src="${src}" style="max-width:90%;max-height:90%;border-radius:16px;">`; 
+        m.onclick = () => m.remove(); 
+        document.body.appendChild(m); 
+    }
+    
     function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
-    async function findMyStatsInScreenshot() { if (!currentImageData) return null; const nickToFind = getCurrentNick(); if (!nickToFind) return null; if (!ocrWorker) { ocrWorker = await Tesseract.createWorker('rus+eng', 1); await ocrWorker.setParameters({ tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_', tessedit_pageseg_mode: '6' }); } const { data: { text } } = await ocrWorker.recognize(currentImageData); const lines = text.split('\n'); for (let line of lines) { if (line.toLowerCase().includes(nickToFind.toLowerCase())) { const numbers = line.match(/\d+/g); if (numbers && numbers.length >= 4) return { kills: parseInt(numbers[0]), killPercent: parseFloat(numbers[1]), hsPercent: parseFloat(numbers[2]), damage: parseInt(numbers[3]) }; } } return null; }
-    document.getElementById('fileInput').onchange = async (e) => { const f = e.target.files[0]; if (f) { const reader = new FileReader(); reader.onload = async (ev) => { currentImageData = ev.target.result; document.getElementById('preview').innerHTML = `<img src="${currentImageData}" style="max-width:100%; max-height:200px; border-radius:16px;">`; const nick = getCurrentNick(); if (!nick) { document.getElementById('ocrResult').innerHTML = `⚠️ Сохраните ник в профиле`; document.getElementById('ocrResult').style.display = 'block'; return; } const stats = await findMyStatsInScreenshot(); if (stats) { recognizedStats = stats; document.getElementById('ocrResult').innerHTML = `✅ Найдено! 💀${stats.kills} 🎯${stats.killPercent}% 💥${stats.hsPercent}% ⚡${stats.damage.toLocaleString()}`; document.getElementById('ocrResult').style.display = 'block'; document.getElementById('sendBtn').style.display = 'block'; } else { document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}"`; document.getElementById('ocrResult').style.display = 'block'; document.getElementById('sendBtn').style.display = 'none'; } }; reader.readAsDataURL(f); } };
-    async function sendStats() { if (!currentUser) { alert('Войдите'); return; } if (!recognizedStats) { alert('Сначала распознайте ник'); return; } const compressed = await new Promise(resolve => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; if (w > 800) { h = (h * 800) / w; w = 800; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); resolve(canvas.toDataURL('image/jpeg', 0.6)); }; img.src = currentImageData; }); const payload = { username: currentUser.username, kills: recognizedStats.kills, killPercent: recognizedStats.killPercent, hsPercent: recognizedStats.hsPercent, damage: recognizedStats.damage, videoLink: document.getElementById('videoLink').value, screenshot: compressed }; const res = await fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (res.ok) { showMsg('uploadMsg', '✅ Отправлено!', false); recognizedStats = null; document.getElementById('ocrResult').style.display = 'none'; document.getElementById('sendBtn').style.display = 'none'; document.getElementById('videoLink').value = ''; document.getElementById('fileInput').value = ''; document.getElementById('preview').innerHTML = ''; currentImageData = null; loadMyStats(); if (currentUser.role === 'admin') loadAdminStats(); loadLeaderboard(); updateUserStats(); } else { const err = await res.json(); showMsg('uploadMsg', `❌ ${err.error}`, true); } }
+    
+    async function findMyStatsInScreenshot() { 
+        if (!currentImageData) return null; 
+        const nickToFind = getCurrentNick(); 
+        if (!nickToFind) return null; 
+        if (!ocrWorker) { 
+            ocrWorker = await Tesseract.createWorker('rus+eng', 1); 
+            await ocrWorker.setParameters({ tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_', tessedit_pageseg_mode: '6' }); 
+        } 
+        const { data: { text } } = await ocrWorker.recognize(currentImageData); 
+        const lines = text.split('\n'); 
+        for (let line of lines) { 
+            if (line.toLowerCase().includes(nickToFind.toLowerCase())) { 
+                const numbers = line.match(/\d+/g); 
+                if (numbers && numbers.length >= 4) return { kills: parseInt(numbers[0]), killPercent: parseFloat(numbers[1]), hsPercent: parseFloat(numbers[2]), damage: parseInt(numbers[3]) }; 
+            } 
+        } 
+        return null; 
+    }
+    
+    document.getElementById('fileInput').onchange = async (e) => { 
+        const f = e.target.files[0]; 
+        if (f) { 
+            const reader = new FileReader(); 
+            reader.onload = async (ev) => { 
+                currentImageData = ev.target.result; 
+                document.getElementById('preview').innerHTML = `<img src="${currentImageData}" style="max-width:100%; max-height:200px; border-radius:16px;">`; 
+                const nick = getCurrentNick(); 
+                if (!nick) { document.getElementById('ocrResult').innerHTML = `⚠️ Сохраните ник в профиле`; document.getElementById('ocrResult').style.display = 'block'; return; } 
+                const stats = await findMyStatsInScreenshot(); 
+                if (stats) { 
+                    recognizedStats = stats; 
+                    document.getElementById('ocrResult').innerHTML = `✅ Найдено! 💀${stats.kills} 🎯${stats.killPercent}% 💥${stats.hsPercent}% ⚡${stats.damage.toLocaleString()}`; 
+                    document.getElementById('ocrResult').style.display = 'block'; 
+                    document.getElementById('sendBtn').style.display = 'block'; 
+                } else { 
+                    document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}"`; 
+                    document.getElementById('ocrResult').style.display = 'block'; 
+                    document.getElementById('sendBtn').style.display = 'none'; 
+                } 
+            }; 
+            reader.readAsDataURL(f); 
+        } 
+    };
+    
+    async function sendStats() { 
+        if (!currentUser) { alert('Войдите'); return; } 
+        if (!recognizedStats) { alert('Сначала распознайте ник'); return; } 
+        const compressed = await new Promise(resolve => { 
+            const img = new Image(); 
+            img.onload = () => { 
+                const canvas = document.createElement('canvas'); 
+                let w = img.width, h = img.height; 
+                if (w > 800) { h = (h * 800) / w; w = 800; } 
+                canvas.width = w; canvas.height = h; 
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h); 
+                resolve(canvas.toDataURL('image/jpeg', 0.6)); 
+            }; 
+            img.src = currentImageData; 
+        }); 
+        const payload = { username: currentUser.username, kills: recognizedStats.kills, killPercent: recognizedStats.killPercent, hsPercent: recognizedStats.hsPercent, damage: recognizedStats.damage, videoLink: document.getElementById('videoLink').value, screenshot: compressed }; 
+        const res = await fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
+        if (res.ok) { 
+            showMsg('uploadMsg', '✅ Отправлено!', false); 
+            recognizedStats = null; 
+            document.getElementById('ocrResult').style.display = 'none'; 
+            document.getElementById('sendBtn').style.display = 'none'; 
+            document.getElementById('videoLink').value = ''; 
+            document.getElementById('fileInput').value = ''; 
+            document.getElementById('preview').innerHTML = ''; 
+            currentImageData = null; 
+            loadMyStats(); 
+            forceLoadAdminStats(); 
+            loadLeaderboard(); 
+        } else { const err = await res.json(); showMsg('uploadMsg', `❌ ${err.error}`, true); } 
+    }
+    
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
@@ -199,9 +406,14 @@
         document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
         document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username;
         if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block';
-        loadLeaderboard(); loadMyStats(); if (currentUser.role === 'admin') loadAdminStats(); updateUserStats();
-    } else { document.getElementById('currentNickDisplay').innerText = localNick; loadLeaderboard(); }
-    document.getElementById('searchPlayer')?.addEventListener('input', () => loadLeaderboard());
+        log(`Загружен пользователь: ${currentUser.username} (${currentUser.role})`);
+        loadLeaderboard();
+        loadMyStats();
+        forceLoadAdminStats();
+    } else {
+        document.getElementById('currentNickDisplay').innerText = localNick;
+        loadLeaderboard();
+    }
 </script>
 </body>
 </html>
