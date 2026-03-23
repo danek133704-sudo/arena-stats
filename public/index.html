@@ -55,7 +55,6 @@
         .auth-form.active { display: block; }
         .auth-form input { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 10px 0; }
         .preview-image { max-width: 100%; max-height: 200px; border-radius: 16px; cursor: pointer; margin-top: 10px; }
-        #adminList { min-height: 200px; background: #1a1a1a; padding: 15px; border-radius: 16px; margin-top: 15px; }
         .admin-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #ffd966; }
         @media (max-width: 700px) { .stats-grid { grid-template-columns: 1fr; } .header-content { flex-direction: column; text-align: center; } }
     </style>
@@ -117,7 +116,7 @@
         <div id="adminTabContent" class="tab-content"></div>
     </div>
 
-    <!-- ОТДЕЛЬНЫЙ БЛОК АДМИН-ПАНЕЛИ, ВСЕГДА ВИДИМЫЙ ДЛЯ АДМИНА -->
+    <!-- АДМИН-ПАНЕЛЬ ОТДЕЛЬНЫМ БЛОКОМ -->
     <div id="adminPanelBlock" class="card admin-section" style="display: none;">
         <h2 style="color: #ffd966; margin-bottom: 20px;">🔧 АДМИН-ПАНЕЛЬ (неподтверждённая статистика)</h2>
         <button onclick="loadAdminStatsDirect()" style="margin-bottom: 15px; background:#ffaa33;">🔄 ОБНОВИТЬ</button>
@@ -213,9 +212,8 @@
         } catch(e) { console.log(e); }
     }
 
-    // ПРЯМАЯ ЗАГРУЗКА АДМИН-ПАНЕЛИ
+    // АДМИН-ПАНЕЛЬ
     async function loadAdminStatsDirect() {
-        console.log('loadAdminStatsDirect вызвана');
         if (!currentUser || currentUser.role !== 'admin') return;
         try {
             const res = await fetch('/api/stats/all');
@@ -256,7 +254,6 @@
                 }
             }
             container.innerHTML = html;
-            console.log('Админ-панель обновлена, записей:', unverified.length);
         } catch(e) { console.log('Ошибка:', e); }
     }
 
