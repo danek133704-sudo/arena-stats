@@ -132,11 +132,11 @@
 
         <div id="leaderboardPanel" class="tab-content active">
             <div class="search-box"><input type="text" id="searchPlayerInput" placeholder="🔍 Поиск игрока..."><button onclick="filterLeaderboard()">🔎</button><button onclick="resetLeaderboard()" class="btn-outline">❌</button></div>
-            <table><thead><th>#</th><th>Игрок</th><th>Убийства</th><th>Урон</th><th>Видео</th></thead><tbody id="leaderboardBody"><td colspan="5">Загрузка...<\/td><\/tbody><\/table>
+             table<thead><th>#</th><th>Игрок</th><th>Убийства</th><th>Урон</th><th>Видео</th></thead><tbody id="leaderboardBody"><td colspan="5">Загрузка...<\/td><\/tbody><\/table>
         <\/div>
 
         <div id="mystatsPanel" class="tab-content">
-            <table><thead><th>Дата</th><th>Ник</th><th>Убийства</th><th>%</th><th>HS%</th><th>Урон</th><th>Видео</th><th>Скрин</th><th>Статус</th><th>Действия</th></thead><tbody id="myStatsBody"><td colspan="10">Загрузка...<\/td><\/tbody><\/table>
+             table<thead><th>Дата</th><th>Ник</th><th>Убийства</th><th>%</th><th>HS%</th><th>Урон</th><th>Видео</th><th>Скрин</th><th>Статус</th><th>Действия</th></thead><tbody id="myStatsBody"><td colspan="10">Загрузка...<\/td><\/tbody><\/table>
         <\/div>
 
         <div id="adminPanel" class="tab-content"><div id="adminList"></div></div>
@@ -270,30 +270,36 @@
     }
     function resetLeaderboard() { document.getElementById('searchPlayerInput').value = ''; renderLeaderboard(allLeaderboardData); }
 
-    // ========== МОЯ СТАТИСТИКА ==========
+    // ========== МОЯ СТАТИСТИКА (ГАРАНТИРОВАННО ПОКАЗЫВАЕТ) ==========
     async function loadMyStats() {
-        if (!currentUser) return;
+        if (!currentUser) {
+            const tbody = document.getElementById('myStatsBody');
+            if (tbody) tbody.innerHTML = '<td colspan="10">Войдите в аккаунт</td>';
+            return;
+        }
         try {
             const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } });
             const stats = await res.json();
             const tbody = document.getElementById('myStatsBody');
             if (!tbody) return;
             tbody.innerHTML = '';
-            if (!stats.length) { tbody.innerHTML = '<td colspan="10">Нет данных<\/td>'; return; }
-            stats.forEach(s => {
-                tbody.innerHTML += `}
-                    <td>${new Date(s.date).toLocaleDateString()}<\/td>
-                    <td><strong>${s.game_nick}<\/strong><\/td>
-                    <td>${s.kills}<\/td>
-                    <td>${s.kill_percent || 0}%<\/td>
-                    <td>${s.hs_percent || 0}%<\/td>
-                    <td>${s.damage?.toLocaleString()}<\/td>
-                    <td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}<\/td>
-                    <td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}<\/td>
-                    <td>${s.verified ? '✅' : '⏳'}<\/td>
-                    <td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—'}<\/td>
-                <\/tr>`.replace(/\n\s*/g, '');
-            });
+            if (!stats.length) {
+                tbody.innerHTML = '<td colspan="10">Нет данных. Загрузите скриншот!</td>';
+                return;
+            }
+            for (let s of stats) {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerHTML = new Date(s.date).toLocaleDateString();
+                row.insertCell(1).innerHTML = `<strong>${s.game_nick || s.username}</strong>`;
+                row.insertCell(2).innerHTML = s.kills;
+                row.insertCell(3).innerHTML = (s.kill_percent || 0) + '%';
+                row.insertCell(4).innerHTML = (s.hs_percent || 0) + '%';
+                row.insertCell(5).innerHTML = s.damage?.toLocaleString() || 0;
+                row.insertCell(6).innerHTML = s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—';
+                row.insertCell(7).innerHTML = s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—';
+                row.insertCell(8).innerHTML = s.verified ? '✅' : '⏳';
+                row.insertCell(9).innerHTML = !s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—';
+            }
         } catch(e) { console.error(e); }
     }
     async function deleteMyStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadMyStats(); loadLeaderboard(); showStatus('uploadStatus', '✅ Удалено', 'success'); }
