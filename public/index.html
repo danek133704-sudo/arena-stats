@@ -3,255 +3,236 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arena Stats</title>
+    <title>Arena Stats | Трекер статистики</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            background: radial-gradient(circle at 20% 30%, #0a0a0a, #030303);
+            color: #e0e0e0;
             min-height: 100vh;
-            color: #ffd966;
         }
 
-        .header {
-            background: rgba(26, 26, 26, 0.95);
+        /* Glassmorphism */
+        .glass {
+            background: rgba(20, 20, 30, 0.5);
             backdrop-filter: blur(10px);
-            padding: 15px 30px;
-            border-bottom: 1px solid rgba(255, 217, 102, 0.2);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            border: 1px solid rgba(255, 200, 100, 0.2);
         }
 
-        .header-content {
-            max-width: 1300px;
-            margin: 0 auto;
+        /* Header */
+        .navbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 200, 100, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
             flex-wrap: wrap;
-            gap: 20px;
+            gap: 15px;
         }
 
         .logo h1 {
-            font-size: 28px;
-            background: linear-gradient(135deg, #ffd966, #ffaa33);
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffcc66, #ffaa33);
             -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
         }
 
-        .logo p {
-            font-size: 12px;
-            color: #ffd966aa;
-        }
-
-        .telegram-link {
-            background: #1a1a1a;
-            padding: 8px 20px;
-            border-radius: 30px;
-            border: 1px solid #ffd966;
-            transition: all 0.3s;
-        }
-
-        .telegram-link a {
-            color: #ffd966;
-            text-decoration: none;
-        }
-
-        .telegram-link:hover {
-            background: #ffd966;
-        }
-
-        .telegram-link:hover a {
-            color: #1a1a1a;
-        }
-
-        button {
-            background: linear-gradient(135deg, #ffd966, #ffaa33);
-            border: none;
-            padding: 10px 24px;
+        .telegram-btn {
+            background: #2c2c2c;
+            padding: 8px 18px;
             border-radius: 40px;
+            border: 1px solid #ffaa33;
+            transition: 0.2s;
+        }
+        .telegram-btn a {
+            color: #ffaa33;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .telegram-btn:hover {
+            background: #ffaa33;
+        }
+        .telegram-btn:hover a {
+            color: #0a0a0a;
+        }
+
+        button, .btn {
+            background: linear-gradient(95deg, #ffaa33, #ffcc66);
+            border: none;
+            padding: 8px 22px;
+            border-radius: 40px;
+            font-weight: 600;
             cursor: pointer;
-            font-weight: bold;
-            color: #1a1a1a;
-            transition: all 0.3s;
+            transition: 0.2s;
+            color: #111;
         }
-
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 217, 102, 0.3);
+            transform: scale(0.97);
+            box-shadow: 0 0 12px rgba(255, 200, 100, 0.6);
         }
-
         .btn-outline {
             background: transparent;
-            border: 1px solid #ffd966;
-            color: #ffd966;
-        }
-
-        .btn-outline:hover {
-            background: #ffd96622;
+            border: 1px solid #ffaa33;
+            color: #ffaa33;
         }
 
         .container {
             max-width: 1300px;
-            margin: 0 auto;
-            padding: 30px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
         }
 
         .card {
-            background: #111111cc;
-            border-radius: 28px;
-            padding: 25px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255, 217, 102, 0.2);
-            transition: all 0.3s;
+            background: rgba(17, 17, 17, 0.8);
+            border-radius: 32px;
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 170, 51, 0.25);
+            transition: 0.2s;
+        }
+        .card:hover {
+            border-color: rgba(255, 170, 51, 0.5);
         }
 
+        /* Upload area */
         .upload-area {
-            border: 2px dashed #ffd966;
-            border-radius: 24px;
-            padding: 35px;
+            border: 2px dashed #ffaa33;
+            border-radius: 28px;
+            padding: 2rem;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: 0.2s;
             background: #0a0a0a;
         }
-
         .upload-area:hover {
-            background: #ffd96611;
-            border-color: #ffaa33;
+            background: rgba(255, 170, 51, 0.05);
+            border-color: #ffcc66;
         }
 
         input {
             width: 100%;
-            padding: 12px 18px;
             background: #1e1e1e;
-            border: 1px solid #ffd96633;
-            border-radius: 40px;
-            color: #ffd966;
+            border: 1px solid rgba(255, 170, 51, 0.3);
+            border-radius: 28px;
+            padding: 12px 18px;
+            color: #ffdd99;
             margin: 10px 0;
-            transition: all 0.3s;
         }
-
         input:focus {
+            border-color: #ffaa33;
             outline: none;
-            border-color: #ffd966;
-            box-shadow: 0 0 8px #ffd966;
+            box-shadow: 0 0 8px #ffaa33;
         }
 
+        /* Tabs */
         .tabs {
             display: flex;
             gap: 12px;
-            margin-bottom: 25px;
-            border-bottom: 1px solid #ffd96633;
+            border-bottom: 1px solid rgba(255, 170, 51, 0.3);
+            margin-bottom: 24px;
             flex-wrap: wrap;
         }
-
         .tab {
-            padding: 10px 28px;
+            padding: 8px 24px;
+            border-radius: 40px;
             cursor: pointer;
-            color: #ffd966aa;
-            border-radius: 40px 40px 0 0;
-            transition: all 0.3s;
-            font-weight: 500;
+            background: #1a1a1a;
+            color: #aaa;
+            transition: all 0.2s ease;
         }
-
         .tab.active {
-            color: #ffd966;
-            background: #ffd96611;
-            border-bottom: 2px solid #ffd966;
+            background: #ffaa33;
+            color: #0a0a0a;
+            font-weight: bold;
+            box-shadow: 0 0 8px #ffaa33;
         }
-
         .tab:hover {
-            color: #ffd966;
-            background: #ffd96611;
+            background: rgba(255, 170, 51, 0.2);
+            color: #ffcc66;
         }
 
         .tab-content {
             display: none;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.3s ease-out;
         }
-
         .tab-content.active {
             display: block;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Cards */
+        /* Статистические карточки */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
         }
-
         .stat-card {
             background: #1a1a1a;
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 18px;
-            border-left: 4px solid #ffd966;
-            transition: all 0.3s;
+            border-left: 4px solid #ffaa33;
+            transition: all 0.2s;
         }
-
         .stat-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
-
         .stat-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #ffd96633;
+            border-bottom: 1px solid rgba(255, 170, 51, 0.2);
+            padding-bottom: 8px;
         }
-
         .stat-nick {
             font-size: 18px;
             font-weight: bold;
-            color: #ffd966;
+            color: #ffaa33;
         }
-
         .stat-date {
             font-size: 12px;
-            color: #ffd966aa;
+            color: #ffaa33aa;
         }
-
         .stat-numbers {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
             margin: 12px 0;
         }
-
         .stat-number {
             background: #0a0a0a;
             padding: 8px 12px;
-            border-radius: 12px;
+            border-radius: 16px;
             text-align: center;
             flex: 1;
         }
-
         .stat-number-value {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
-            color: #ffd966;
+            color: #ffaa33;
         }
-
         .stat-number-label {
             font-size: 11px;
-            color: #ffd966aa;
+            color: #ffaa33aa;
         }
-
         .stat-status {
             display: inline-block;
             padding: 4px 12px;
@@ -259,44 +240,21 @@
             font-size: 12px;
             font-weight: bold;
         }
-
         .status-verified {
             background: #2e7d3240;
             color: #4caf50;
             border: 1px solid #4caf50;
         }
-
         .status-pending {
             background: #ff980040;
             color: #ff9800;
             border: 1px solid #ff9800;
         }
 
-        .stat-actions {
-            margin-top: 12px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .screenshot-thumb {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .screenshot-thumb:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 8px #ffd966;
-        }
-
-        /* Leaderboard */
+        /* Лидерборд */
         .leaderboard-card {
             background: #1a1a1a;
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 15px;
             margin-bottom: 10px;
             display: flex;
@@ -304,115 +262,129 @@
             gap: 15px;
             transition: all 0.2s;
         }
-
         .leaderboard-card:hover {
             background: #2a2a2a;
             transform: translateX(5px);
         }
-
         .leaderboard-rank {
             font-size: 28px;
             font-weight: bold;
-            width: 50px;
+            width: 60px;
             text-align: center;
         }
-
         .rank-1 { color: gold; text-shadow: 0 0 5px gold; }
         .rank-2 { color: silver; }
         .rank-3 { color: #cd7f32; }
-
         .leaderboard-info {
             flex: 1;
         }
-
         .leaderboard-name {
             font-size: 18px;
             font-weight: bold;
         }
-
         .leaderboard-stats {
             display: flex;
             gap: 20px;
             margin-top: 5px;
             font-size: 13px;
-            color: #ffd966aa;
+            color: #ffaa33aa;
         }
 
-        /* Profile Dropdown */
+        /* Личная статистика */
+        .personal-stats {
+            background: #0e0e12;
+            border-radius: 28px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 15px;
+            border: 1px solid rgba(255, 170, 51, 0.3);
+        }
+        .personal-stat {
+            text-align: center;
+            background: #1a1a1a;
+            padding: 15px 25px;
+            border-radius: 24px;
+            min-width: 140px;
+        }
+        .personal-stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffaa33;
+        }
+        .personal-stat-label {
+            font-size: 12px;
+            color: #ffaa33aa;
+            margin-top: 5px;
+        }
+
+        /* Профиль */
         .profile-menu {
             position: relative;
             display: inline-block;
         }
-
         .profile-dropdown {
             position: absolute;
             right: 0;
-            top: 100%;
-            background: #1a1a1a;
-            border: 1px solid #ffd966;
-            border-radius: 20px;
-            padding: 20px;
-            min-width: 260px;
-            z-index: 100;
-            margin-top: 10px;
+            top: 45px;
+            background: #1e1e1e;
+            border: 1px solid #ffaa33;
+            border-radius: 24px;
+            padding: 1rem;
+            width: 280px;
+            z-index: 200;
             backdrop-filter: blur(8px);
         }
-
         .nick-edit {
             display: flex;
             gap: 10px;
             margin-top: 10px;
         }
-
         .nick-edit input {
             flex: 1;
             margin: 0;
             padding: 8px 12px;
         }
 
-        .nick-edit button {
-            padding: 8px 16px;
-        }
-
+        /* Модалка для изображения */
         .modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.95);
+            background: #000000dd;
+            backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
             cursor: pointer;
         }
-
         .modal img {
             max-width: 90%;
             max-height: 90%;
-            border-radius: 16px;
+            border-radius: 24px;
         }
 
         .status-msg {
             padding: 12px;
-            border-radius: 12px;
+            border-radius: 24px;
             margin-top: 12px;
             text-align: center;
         }
-
         .status-success {
             background: #2e7d3240;
             color: #4caf50;
             border: 1px solid #4caf50;
         }
-
         .status-error {
             background: #c6282840;
             color: #ff6b6b;
             border: 1px solid #c62828;
         }
-
         .debug-panel {
             background: #0a0a0a;
             padding: 12px;
@@ -424,67 +396,47 @@
             overflow: auto;
             margin-top: 15px;
         }
-
-        .metrics-card {
-            background: #0a0a0a;
-            border-radius: 20px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid #ffd96633;
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 15px;
+        .screenshot-thumb {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
         }
-
-        .metric {
-            text-align: center;
+        .screenshot-thumb:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 8px #ffaa33;
         }
-
-        .metric-value {
-            font-size: 28px;
-            font-weight: bold;
-            color: #ffd966;
-        }
-
-        .metric-label {
-            font-size: 12px;
-            color: #ffd966aa;
-        }
-
         @media (max-width: 700px) {
+            .navbar { flex-direction: column; text-align: center; }
             .container { padding: 15px; }
             .stats-grid { grid-template-columns: 1fr; }
             .leaderboard-card { flex-wrap: wrap; }
-            .header-content { flex-direction: column; text-align: center; }
         }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <div class="header-content">
-        <div class="logo">
-            <h1>⚔️ ARENA STATS</h1>
-            <p>Трекер статистики | Общий лидерборд</p>
-        </div>
-        <div class="telegram-link">
-            <a href="https://t.me/flikfak" target="_blank">🤝 @flikfak — сотрудничество</a>
-        </div>
-        <div id="authArea">
-            <button id="showAuthBtn" onclick="showAuthModal()">🔐 Вход / Регистрация</button>
-            <div id="userInfo" style="display: none;">
-                <span id="userNameDisplay"></span>
-                <div class="profile-menu" style="display: inline-block; margin-left: 12px;">
-                    <button class="btn-outline" onclick="toggleProfile()">👤 Профиль</button>
-                    <div id="profileDropdown" class="profile-dropdown" style="display: none;">
-                        <div><strong>Игровой ник:</strong> <span id="currentNickDisplay">Flik_Homixide</span></div>
-                        <div class="nick-edit">
-                            <input type="text" id="nickInput" placeholder="Новый ник">
-                            <button onclick="saveNick()">Сохранить</button>
-                        </div>
-                        <button onclick="logout()" class="btn-outline" style="margin-top: 15px; width: 100%;">🚪 Выйти</button>
+<div class="navbar">
+    <div class="logo">
+        <h1>⚔️ ARENA STATS</h1>
+        <p style="font-size: 12px;">Трекер статистики | Общий лидерборд</p>
+    </div>
+    <div class="telegram-btn"><a href="https://t.me/flikfak" target="_blank">🤝 @flikfak — сотрудничество</a></div>
+    <div id="authArea">
+        <button id="showAuthBtn" onclick="showAuthModal()">🔐 Вход / Регистрация</button>
+        <div id="userInfo" style="display: none;">
+            <span id="userNameDisplay"></span>
+            <div class="profile-menu" style="display: inline-block; margin-left: 12px;">
+                <button class="btn-outline" onclick="toggleProfile()">👤 Профиль</button>
+                <div id="profileDropdown" class="profile-dropdown" style="display: none;">
+                    <div><strong>Игровой ник:</strong> <span id="currentNickDisplay">Flik_Homixide</span></div>
+                    <div class="nick-edit">
+                        <input type="text" id="nickInput" placeholder="Новый ник">
+                        <button onclick="saveNick()">Сохранить</button>
                     </div>
+                    <button onclick="logout()" class="btn-outline" style="margin-top: 15px; width: 100%;">🚪 Выйти</button>
                 </div>
             </div>
         </div>
@@ -542,7 +494,8 @@
         </div>
 
         <div id="mystatsTab" class="tab-content">
-            <div id="myStatsMetrics"></div>
+            <!-- Персональная статистика -->
+            <div id="personalStatsContainer" class="personal-stats" style="display: none;"></div>
             <div id="myStatsList"></div>
         </div>
 
@@ -553,7 +506,7 @@
 
     <!-- Debug -->
     <details style="margin-top: 20px;">
-        <summary style="color: #ffd966aa; cursor: pointer;">🔧 Отладка</summary>
+        <summary style="color: #ffaa33aa; cursor: pointer;">🔧 Отладка</summary>
         <div id="debugLog" class="debug-panel"></div>
     </details>
 </div>
@@ -566,6 +519,7 @@
     let ocrWorker = null;
     let localNick = localStorage.getItem('arena_nick') || 'Flik_Homixide';
 
+    // ========== Утилиты ==========
     function log(msg) {
         const debugDiv = document.getElementById('debugLog');
         if (debugDiv) {
@@ -592,6 +546,8 @@
             document.getElementById('nickInput').value = '';
             log(`✅ Ник сохранён: ${localNick}`);
             showMsg('uploadMsg', `✅ Ник сохранён: ${localNick}`, false);
+            // Обновляем личную статистику (ник изменился)
+            if (currentUser) loadPersonalStats();
         } else {
             showMsg('uploadMsg', '❌ Введите ник', true);
         }
@@ -601,7 +557,7 @@
         return localNick || (currentUser?.gameNick) || (currentUser?.username) || '';
     }
 
-    // Auth
+    // ========== Авторизация ==========
     async function doRegister() {
         const payload = {
             username: document.getElementById('regUsername').value,
@@ -638,6 +594,7 @@
             log(`✅ Вход: ${currentUser.username} (${currentUser.role})`);
             loadLeaderboard();
             loadMyStats();
+            loadPersonalStats();
             if (currentUser.role === 'admin') loadAdminStats();
         } else {
             showMsg('loginMsg', `❌ ${data.error}`, true);
@@ -670,11 +627,45 @@
         document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
         document.getElementById(tab + 'Tab').classList.add('active');
         if (tab === 'leaderboard') loadLeaderboard();
-        if (tab === 'mystats') loadMyStats();
+        if (tab === 'mystats') { loadMyStats(); loadPersonalStats(); }
         if (tab === 'admin' && currentUser?.role === 'admin') loadAdminStats();
     }
 
-    // Leaderboard
+    // ========== Личная статистика (макс/средний урон) ==========
+    async function loadPersonalStats() {
+        if (!currentUser) return;
+        try {
+            const res = await fetch(`/api/user-stats/${currentUser.username}`);
+            const stats = await res.json();
+            const container = document.getElementById('personalStatsContainer');
+            if (!container) return;
+            if (stats.totalKills === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'flex';
+            container.innerHTML = `
+                <div class="personal-stat">
+                    <div class="personal-stat-value">${stats.totalKills}</div>
+                    <div class="personal-stat-label">Всего убийств</div>
+                </div>
+                <div class="personal-stat">
+                    <div class="personal-stat-value">${stats.totalDamage.toLocaleString()}</div>
+                    <div class="personal-stat-label">Всего урона</div>
+                </div>
+                <div class="personal-stat">
+                    <div class="personal-stat-value">${stats.maxDamage.toLocaleString()}</div>
+                    <div class="personal-stat-label">Максимальный урон</div>
+                </div>
+                <div class="personal-stat">
+                    <div class="personal-stat-value">${stats.avgDamage.toLocaleString()}</div>
+                    <div class="personal-stat-label">Средний урон</div>
+                </div>
+            `;
+        } catch(e) { log('PersonalStats error: ' + e); }
+    }
+
+    // ========== Лидерборд ==========
     async function loadLeaderboard() {
         try {
             const res = await fetch('/api/leaderboard');
@@ -693,55 +684,31 @@
                         <div class="leaderboard-info">
                             <div class="leaderboard-name">${p.game_nick || p.username}</div>
                             <div class="leaderboard-stats">
-                                <span>💀 ${p.kills}</span>
-                                <span>⚡ ${p.damage?.toLocaleString()}</span>
+                                <span>💀 ${p.kills} убийств</span>
+                                <span>⚡ ${p.damage?.toLocaleString()} урона</span>
                             </div>
                         </div>
-                        ${p.video_link ? `<a href="${p.video_link}" target="_blank" style="color:#ffd966;">🎥</a>` : ''}
+                        ${p.video_link ? `<a href="${p.video_link}" target="_blank" style="color:#ffaa33;">🎥</a>` : ''}
                     </div>
                 `;
             });
         } catch(e) { log('Leaderboard error: ' + e); }
     }
 
-    // My Stats
+    // ========== Моя статистика ==========
     async function loadMyStats() {
         if (!currentUser) return;
         try {
             const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } });
             const stats = await res.json();
             const container = document.getElementById('myStatsList');
-            const metricsDiv = document.getElementById('myStatsMetrics');
             container.innerHTML = '';
-
             if (!stats.length) {
-                metricsDiv.innerHTML = '';
                 container.innerHTML = '<div style="text-align:center; padding:40px;">📭 Нет статистики. Загрузите скриншот!</div>';
                 return;
             }
-
-            // Расчёт метрик
-            const verifiedStats = stats.filter(s => s.verified);
-            const maxDamage = verifiedStats.length ? Math.max(...verifiedStats.map(s => s.damage)) : 0;
-            const avgDamage = verifiedStats.length ? Math.round(verifiedStats.reduce((sum, s) => sum + s.damage, 0) / verifiedStats.length) : 0;
-
-            metricsDiv.innerHTML = `
-                <div class="metrics-card">
-                    <div class="metric">
-                        <div class="metric-value">${maxDamage.toLocaleString()}</div>
-                        <div class="metric-label">Максимальный урон</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">${avgDamage.toLocaleString()}</div>
-                        <div class="metric-label">Средний урон</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">${stats.length}</div>
-                        <div class="metric-label">Всего записей</div>
-                    </div>
-                </div>
-            `;
-
+            // Сортируем по дате (новые сверху)
+            stats.sort((a,b) => new Date(b.date) - new Date(a.date));
             stats.forEach(s => {
                 container.innerHTML += `
                     <div class="stat-card">
@@ -752,19 +719,19 @@
                         <div class="stat-numbers">
                             <div class="stat-number">
                                 <div class="stat-number-value">${s.kills}</div>
-                                <div class="stat-number-label"></div>
+                                <div class="stat-number-label">💀</div>
                             </div>
                             <div class="stat-number">
                                 <div class="stat-number-value">${s.kill_percent || 0}%</div>
-                                <div class="stat-number-label"></div>
+                                <div class="stat-number-label">🎯</div>
                             </div>
                             <div class="stat-number">
                                 <div class="stat-number-value">${s.hs_percent || 0}%</div>
-                                <div class="stat-number-label"></div>
+                                <div class="stat-number-label">💥</div>
                             </div>
                             <div class="stat-number">
                                 <div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div>
-                                <div class="stat-number-label"></div>
+                                <div class="stat-number-label">⚡</div>
                             </div>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -774,9 +741,9 @@
                                 </span>
                             </div>
                             <div style="display: flex; gap: 10px;">
-                                ${s.video_link ? `<a href="${s.video_link}" target="_blank" style="color:#ffd966;">🎥 Видео</a>` : ''}
+                                ${s.video_link ? `<a href="${s.video_link}" target="_blank" style="color:#ffaa33;">🎥 Видео</a>` : ''}
                                 ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
-                                ${!s.verified ? `<button onclick="deleteMyStat(${s.id})" style="background:#c62828; padding:5px 12px;">🗑️ Удалить</button>` : ''}
+                                ${!s.verified ? `<button onclick="deleteMyStat(${s.id})" style="background:#c62828; padding:5px 12px;">🗑️</button>` : ''}
                             </div>
                         </div>
                     </div>
@@ -789,11 +756,12 @@
         if (!confirm('Удалить эту статистику?')) return;
         await fetch(`/api/stats/${id}`, { method: 'DELETE' });
         loadMyStats();
+        loadPersonalStats();
         loadLeaderboard();
         showMsg('uploadMsg', '✅ Статистика удалена', false);
     }
 
-    // Admin Panel
+    // ========== Админ-панель ==========
     async function loadAdminStats() {
         if (!currentUser || currentUser.role !== 'admin') return;
         try {
@@ -814,10 +782,10 @@
                             <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
                         </div>
                         <div class="stat-numbers">
-                            <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label"></div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label"></div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label"></div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label"></div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                             <div>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥 Видео</a>` : ''} ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}</div>
@@ -832,11 +800,11 @@
         } catch(e) { log('AdminStats error: ' + e); }
     }
 
-    async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
-    async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Удалено', false); }
+    async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); loadPersonalStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
+    async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); loadPersonalStats(); showMsg('uploadMsg', '✅ Удалено', false); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // OCR
+    // ========== Нейронка ==========
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
@@ -854,7 +822,7 @@
             if (line.toLowerCase().includes(nickToFind.toLowerCase())) {
                 const numbers = line.match(/\d+/g);
                 if (numbers && numbers.length >= 4) {
-                    log(`Найдено: ${line}`);
+                    log(`Найдено в строке: ${line}`);
                     return { kills: parseInt(numbers[0]), killPercent: parseFloat(numbers[1]), hsPercent: parseFloat(numbers[2]), damage: parseInt(numbers[3]) };
                 }
             }
@@ -878,7 +846,7 @@
                 const stats = await findMyStatsInScreenshot();
                 if (stats) {
                     recognizedStats = stats;
-                    document.getElementById('ocrResult').innerHTML = `✅ Найдено! Убийства: ${stats.kills} | % убийств: ${stats.killPercent}% | HS%: ${stats.hsPercent}% | Урон: ${stats.damage.toLocaleString()}`;
+                    document.getElementById('ocrResult').innerHTML = `✅ Найдено! 💀 ${stats.kills} | 🎯 ${stats.killPercent}% | 💥 ${stats.hsPercent}% | ⚡ ${stats.damage.toLocaleString()}`;
                     document.getElementById('ocrResult').style.display = 'block';
                     document.getElementById('sendBtn').style.display = 'block';
                 } else {
@@ -927,6 +895,7 @@
             document.getElementById('preview').innerHTML = '';
             currentImageData = null;
             loadMyStats();
+            loadPersonalStats();
             if (currentUser.role === 'admin') loadAdminStats();
             loadLeaderboard();
         } else {
@@ -935,7 +904,7 @@
         }
     }
 
-    // Init
+    // ========== Инициализация ==========
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
@@ -948,6 +917,7 @@
         if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block';
         loadLeaderboard();
         loadMyStats();
+        loadPersonalStats();
         if (currentUser.role === 'admin') loadAdminStats();
     } else {
         document.getElementById('currentNickDisplay').innerText = localNick;
