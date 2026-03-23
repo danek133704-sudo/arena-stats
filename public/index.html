@@ -25,7 +25,7 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
-        .admin-card { background: #0a0a0a; border-radius: 20px; padding: 1rem; border-left: 4px solid #ffd966; transition: 0.2s; }
+        .admin-card { background: #0a0a0a; border-radius: 20px; padding: 1rem; border-left: 4px solid #ffd966; transition: 0.2s; margin-bottom: 15px; }
         .admin-card:hover { background: #2c2c2c; transform: translateX(5px); }
         .stat-header { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #ffd96633; }
         .stat-nick { font-size: 1.1rem; font-weight: bold; color: #ffd966; }
@@ -55,6 +55,9 @@
         .auth-form.active { display: block; }
         .auth-form input { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 10px 0; }
         .preview-image { max-width: 100%; max-height: 200px; border-radius: 16px; cursor: pointer; margin-top: 10px; }
+        /* Убираем возможные скрытия */
+        #adminList { display: block !important; visibility: visible !important; opacity: 1 !important; min-height: 200px; background: #1a1a1a; padding: 15px; border-radius: 16px; margin-top: 15px; }
+        .admin-card { display: block !important; visibility: visible !important; }
         @media (max-width: 700px) { .stats-grid { grid-template-columns: 1fr; } .header-content { flex-direction: column; text-align: center; } }
     </style>
 </head>
@@ -112,7 +115,12 @@
         </div>
         <div id="leaderboardTab" class="tab-content active"><input type="text" id="searchPlayer" placeholder="🔍 Поиск игрока..." style="margin-bottom: 15px;"><div id="leaderboardList"></div></div>
         <div id="mystatsTab" class="tab-content"><div id="myStatsList"></div></div>
-        <div id="adminTabContent" class="tab-content"><div id="adminList" class="stats-grid"></div></div>
+        <div id="adminTabContent" class="tab-content">
+            <div style="background: #2c2c2c; padding: 10px; border-radius: 12px; margin-bottom: 15px;">
+                <button onclick="loadAdminStats()" style="background:#ffaa33; color:#000;">🔄 ОБНОВИТЬ АДМИН-ПАНЕЛЬ</button>
+            </div>
+            <div id="adminList" class="stats-grid" style="min-height: 200px; background: #1a1a1a; padding: 15px; border-radius: 16px;"></div>
+        </div>
     </div>
 </div>
 
@@ -201,7 +209,7 @@
         } catch(e) { console.log(e); }
     }
 
-    // ========== АДМИН-ПАНЕЛЬ - ПРОСТЕЙШАЯ ВЕРСИЯ ==========
+    // АДМИН-ПАНЕЛЬ С ПРЯМЫМ ВЫВОДОМ
     async function loadAdminStats() {
         console.log('loadAdminStats вызвана');
         if (!currentUser) {
@@ -219,14 +227,13 @@
             const unverified = allStats.filter(s => !s.verified);
             console.log('Неподтверждённых:', unverified.length);
             
-            // Простейший вывод через innerHTML
-            let html = '';
+            let html = '<h3 style="color:#ffd966; margin-bottom:15px;">📋 НЕПОДТВЕРЖДЁННАЯ СТАТИСТИКА</h3>';
             if (unverified.length === 0) {
-                html = '<div style="text-align:center; padding:40px;">✅ Нет неподтверждённой статистики</div>';
+                html += '<div style="text-align:center; padding:40px;">✅ Нет неподтверждённой статистики</div>';
             } else {
                 for (let s of unverified) {
                     html += `
-                        <div class="admin-card">
+                        <div class="admin-card" style="margin-bottom: 15px;">
                             <div class="stat-header">
                                 <span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span>
                                 <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
@@ -252,7 +259,7 @@
                 }
             }
             document.getElementById('adminList').innerHTML = html;
-            console.log('Админ-панель обновлена');
+            console.log('Админ-панель обновлена, записей:', unverified.length);
         } catch(e) { 
             console.log('Ошибка:', e);
             document.getElementById('adminList').innerHTML = `<div style="text-align:center; padding:40px; color:#ff6b6b;">❌ Ошибка: ${e.message}</div>`;
