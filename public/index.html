@@ -17,7 +17,9 @@
         .btn-outline { background: transparent; border: 1px solid #ffd966; color: #ffd966; }
         .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
         .card { background: #1a1a1a; border-radius: 24px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #ffd96633; }
-        .upload-area { border: 2px dashed #ffd966; border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; background: #0a0a0a; }
+        .upload-area { border: 2px dashed #ffd966; border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; background: #0a0a0a; transition: 0.2s; }
+        .upload-area:hover { background: #ffaa3310; border-color: #ffcc66; }
+        .upload-area.dragover { background: #ffaa3320; border-color: #ffaa33; }
         input { width: 100%; padding: 12px; background: #2c2c2c; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 8px 0; }
         .tabs { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; border-bottom: 1px solid #ffd96633; }
         .tab { padding: 8px 28px; border-radius: 40px; cursor: pointer; background: #2c2c2c; color: #aaa; transition: 0.2s; }
@@ -56,6 +58,7 @@
         .auth-form input { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 10px 0; }
         .preview-image { max-width: 100%; max-height: 200px; border-radius: 16px; cursor: pointer; margin-top: 10px; }
         .admin-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #ffd966; }
+        .retry-btn { background: #ffaa33; color: #0a0a0a; margin-left: 10px; padding: 4px 12px; font-size: 12px; }
         @media (max-width: 700px) { .stats-grid { grid-template-columns: 1fr; } .header-content { flex-direction: column; text-align: center; } }
     </style>
 </head>
@@ -97,7 +100,11 @@
 
     <div id="uploadBlock" class="card" style="display: none;">
         <h2>📸 Загрузить скриншот</h2>
-        <div class="upload-area" onclick="document.getElementById('fileInput').click()"><div style="font-size: 40px;">📸</div><p>Нажми или перетащи скриншот</p><input type="file" id="fileInput" hidden accept="image/*"></div>
+        <div class="upload-area" id="uploadArea">
+            <div style="font-size: 40px;">📸</div>
+            <p>Нажми или перетащи скриншот</p>
+            <input type="file" id="fileInput" hidden accept="image/*">
+        </div>
         <div id="preview" style="text-align: center;"></div>
         <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео">
         <div id="ocrResult" style="background: #0a0a0a; padding: 12px; border-radius: 20px; margin: 12px 0; display: none;"></div>
@@ -293,7 +300,7 @@
     async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Удалено', false); }
 
-    // УЛУЧШЕННАЯ НЕЙРОНКА
+    // УЛУЧШЕННАЯ НЕЙРОНКА С ПОДДЕРЖКОЙ ПОВТОРНОЙ ЗАГРУЗКИ
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
@@ -309,12 +316,10 @@
         
         const { data: { text } } = await ocrWorker.recognize(currentImageData);
         
-        // Очищаем текст от лишних символов и ищем строку с ником
         const lines = text.split('\n');
         const nickLower = nickToFind.toLowerCase();
         
         for (let line of lines) {
-            // Очищаем строку от лишних символов для поиска
             const cleanLine = line.replace(/[^a-z0-9_]/gi, ' ').toLowerCase();
             if (cleanLine.includes(nickLower)) {
                 const numbers = line.match(/\d+/g);
@@ -331,34 +336,65 @@
         return null;
     }
 
+    // Функция обработки загруженного файла
+    async function processFile(file) {
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            currentImageData = ev.target.result;
+            document.getElementById('preview').innerHTML = `<img src="${currentImageData}" class="preview-image" onclick="showFullImage('${currentImageData}')">`;
+            
+            const nick = getCurrentNick();
+            if (!nick) { 
+                document.getElementById('ocrResult').innerHTML = `⚠️ Сохраните ник в профиле`; 
+                document.getElementById('ocrResult').style.display = 'block'; 
+                document.getElementById('sendBtn').style.display = 'none';
+                return; 
+            }
+            
+            document.getElementById('ocrResult').innerHTML = `🔍 Распознавание...`;
+            document.getElementById('ocrResult').style.display = 'block';
+            document.getElementById('sendBtn').style.display = 'none';
+            
+            const stats = await findMyStatsInScreenshot();
+            if (stats) {
+                recognizedStats = stats;
+                document.getElementById('ocrResult').innerHTML = `✅ Найдено! 💀${stats.kills} | 🎯${stats.killPercent}% | 💥${stats.hsPercent}% | ⚡${stats.damage.toLocaleString()}`;
+                document.getElementById('sendBtn').style.display = 'block';
+            } else {
+                document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}" в таблице. Попробуйте другой скриншот.`;
+                document.getElementById('sendBtn').style.display = 'none';
+                recognizedStats = null;
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Drag and drop
+    const uploadArea = document.getElementById('uploadArea');
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            await processFile(file);
+        }
+    });
+
+    // Клик для выбора файла
+    uploadArea.onclick = () => document.getElementById('fileInput').click();
     document.getElementById('fileInput').onchange = async (e) => {
-        const f = e.target.files[0];
-        if (f) {
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-                currentImageData = ev.target.result;
-                document.getElementById('preview').innerHTML = `<img src="${currentImageData}" class="preview-image" onclick="showFullImage('${currentImageData}')">`;
-                const nick = getCurrentNick();
-                if (!nick) { 
-                    document.getElementById('ocrResult').innerHTML = `⚠️ Сохраните ник в профиле`; 
-                    document.getElementById('ocrResult').style.display = 'block'; 
-                    return; 
-                }
-                document.getElementById('ocrResult').innerHTML = `🔍 Распознавание...`;
-                document.getElementById('ocrResult').style.display = 'block';
-                
-                const stats = await findMyStatsInScreenshot();
-                if (stats) {
-                    recognizedStats = stats;
-                    document.getElementById('ocrResult').innerHTML = `✅ Найдено! 💀${stats.kills} | 🎯${stats.killPercent}% | 💥${stats.hsPercent}% | ⚡${stats.damage.toLocaleString()}`;
-                    document.getElementById('sendBtn').style.display = 'block';
-                } else {
-                    document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}" в таблице. Попробуйте другой скриншот.`;
-                    document.getElementById('sendBtn').style.display = 'none';
-                    recognizedStats = null;
-                }
-            };
-            reader.readAsDataURL(f);
+        const file = e.target.files[0];
+        if (file) {
+            await processFile(file);
         }
     };
 
