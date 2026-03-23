@@ -1,6 +1,5 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,62 +7,65 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
-const DATA_FILE = path.join(__dirname, 'data.json');
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+});
 
-let data = { users: [], stats: [] };
-
-function loadData() {
+async function initDb() {
     try {
-        if (fs.existsSync(DATA_FILE)) {
-            data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-            console.log(`📁 Загружено: ${data.users.length} пользователей, ${data.stats.length} записей`);
-        } else {
-            data = { users: [], stats: [] };
-        }
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                game_nick TEXT,
+                role TEXT DEFAULT 'user'
+            )
+        `);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS stats (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                username TEXT,
+                game_nick TEXT,
+                kills INTEGER,
+                kill_percent DECIMAL,
+                hs_percent DECIMAL,
+                damage INTEGER,
+                video_link TEXT,
+                screenshot TEXT,
+                verified BOOLEAN DEFAULT false,
+                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
         
-        const adminExists = data.users.find(u => u.username === 'admin');
-        if (!adminExists) {
-            const adminHash = bcrypt.hashSync('gtafak', 10);
-            data.users.push({ id: 1, username: 'admin', password: adminHash, game_nick: 'Admin', role: 'admin' });
+        const adminCheck = await pool.query('SELECT * FROM users WHERE username = $1', ['admin']);
+        if (adminCheck.rows.length === 0) {
+            const hash = await bcrypt.hash('gtafak', 10);
+            await pool.query(
+                'INSERT INTO users (username, password, game_nick, role) VALUES ($1, $2, $3, $4)',
+                ['admin', hash, 'Admin', 'admin']
+            );
             console.log('✅ Админ создан');
         }
-        
-        // Тестовые записи если пусто
-        const unverifiedCount = data.stats.filter(s => !s.verified).length;
-        if (unverifiedCount === 0) {
-            const testStats = [
-                { id: Date.now() + 1, username: 'player1', game_nick: 'Flik_Homixide', kills: 142, kill_percent: 33, hs_percent: 5, damage: 16257, video_link: '', screenshot: '', verified: false, date: new Date().toISOString() },
-                { id: Date.now() + 2, username: 'player2', game_nick: 'Andrey_Chikatilov', kills: 80, kill_percent: 26, hs_percent: 10, damage: 10948, video_link: '', screenshot: '', verified: false, date: new Date().toISOString() }
-            ];
-            data.stats.push(...testStats);
-            saveData();
-            console.log('📊 Добавлены тестовые записи');
-        }
-    } catch(e) { console.error('Ошибка загрузки:', e); }
+        console.log('✅ База готова');
+    } catch (err) {
+        console.error('Ошибка БД:', err);
+    }
 }
-
-function saveData() {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    console.log('💾 Данные сохранены');
-}
-
-loadData();
+initDb();
 
 app.post('/api/register', async (req, res) => {
     try {
         const { username, password, gameNick } = req.body;
-        if (data.users.find(u => u.username === username)) {
-            return res.status(400).json({ error: 'Пользователь уже существует' });
-        }
-        const hash = bcrypt.hashSync(password, 10);
-        data.users.push({
-            id: Date.now(),
-            username,
-            password: hash,
-            game_nick: gameNick || username,
-            role: 'user'
-        });
-        saveData();
+        const exist = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+        if (exist.rows.length > 0) return res.status(400).json({ error: 'Пользователь уже существует' });
+        const hash = await bcrypt.hash(password, 10);
+        await pool.query(
+            'INSERT INTO users (username, password, game_nick) VALUES ($1, $2, $3)',
+            [username, hash, gameNick || username]
+        );
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -73,14 +75,11 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        const user = data.users.find(u => u.username === username);
-        if (!user) {
-            return res.status(400).json({ error: 'Пользователь не найден' });
-        }
-        const match = bcrypt.compareSync(password, user.password);
-        if (!match) {
-            return res.status(400).json({ error: 'Неверный пароль' });
-        }
+        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        if (result.rows.length === 0) return res.status(400).json({ error: 'Пользователь не найден' });
+        const user = result.rows[0];
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) return res.status(400).json({ error: 'Неверный пароль' });
         res.json({
             success: true,
             user: {
@@ -98,22 +97,11 @@ app.post('/api/login', async (req, res) => {
 app.put('/api/profile', async (req, res) => {
     try {
         const { username, gameNick } = req.body;
-        const user = data.users.find(u => u.username === username);
-        if (user) {
-            user.game_nick = gameNick;
-            // ОБНОВЛЯЕМ НИК ВО ВСЕЙ СТАТИСТИКЕ ПОЛЬЗОВАТЕЛЯ
-            data.stats.forEach(stat => {
-                if (stat.username === username) {
-                    stat.game_nick = gameNick;
-                }
-            });
-            saveData();
-            res.json({ success: true, user: { username: user.username, gameNick: user.game_nick, role: user.role } });
-        } else {
-            res.status(404).json({ error: 'Пользователь не найден' });
-        }
+        await pool.query('UPDATE users SET game_nick = $1 WHERE username = $2', [gameNick, username]);
+        // Обновляем ник в статистике
+        await pool.query('UPDATE stats SET game_nick = $1 WHERE username = $2', [gameNick, username]);
+        res.json({ success: true });
     } catch (e) {
-        console.error(e);
         res.status(500).json({ error: 'Ошибка' });
     }
 });
@@ -121,24 +109,16 @@ app.put('/api/profile', async (req, res) => {
 app.post('/api/stats', async (req, res) => {
     try {
         const { username, kills, killPercent, hsPercent, damage, videoLink, screenshot } = req.body;
-        const user = data.users.find(u => u.username === username);
-        if (!user) return res.status(400).json({ error: 'Пользователь не найден' });
-        
-        const newStat = {
-            id: Date.now(),
-            username,
-            game_nick: user.game_nick,
-            kills: kills || 0,
-            kill_percent: killPercent || 0,
-            hs_percent: hsPercent || 0,
-            damage: damage || 0,
-            video_link: videoLink || '',
-            screenshot: screenshot || '',
-            verified: user.role === 'admin' ? true : false,
-            date: new Date().toISOString()
-        };
-        data.stats.push(newStat);
-        saveData();
+        const userRes = await pool.query('SELECT id, role, game_nick FROM users WHERE username = $1', [username]);
+        if (userRes.rows.length === 0) return res.status(400).json({ error: 'Пользователь не найден' });
+        const userId = userRes.rows[0].id;
+        const isAdmin = userRes.rows[0].role === 'admin';
+        const gameNick = userRes.rows[0].game_nick;
+        await pool.query(
+            `INSERT INTO stats (user_id, username, game_nick, kills, kill_percent, hs_percent, damage, video_link, screenshot, verified)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+            [userId, username, gameNick, kills, killPercent, hsPercent, damage, videoLink, screenshot, isAdmin]
+        );
         res.json({ success: true });
     } catch (e) {
         console.error(e);
@@ -148,46 +128,35 @@ app.post('/api/stats', async (req, res) => {
 
 app.get('/api/stats/my', async (req, res) => {
     const username = req.headers.username;
-    const myStats = data.stats.filter(s => s.username === username);
-    res.json(myStats);
+    const result = await pool.query('SELECT * FROM stats WHERE username = $1 ORDER BY date DESC', [username]);
+    res.json(result.rows);
 });
 
 app.get('/api/stats/all', async (req, res) => {
-    res.json(data.stats);
+    const result = await pool.query('SELECT * FROM stats ORDER BY date DESC');
+    res.json(result.rows);
 });
 
 app.put('/api/stats/:id/verify', async (req, res) => {
-    const stat = data.stats.find(s => s.id == req.params.id);
-    if (stat) {
-        stat.verified = true;
-        saveData();
-    }
+    await pool.query('UPDATE stats SET verified = true WHERE id = $1', [req.params.id]);
     res.json({ success: true });
 });
 
 app.delete('/api/stats/:id', async (req, res) => {
-    data.stats = data.stats.filter(s => s.id != req.params.id);
-    saveData();
+    await pool.query('DELETE FROM stats WHERE id = $1', [req.params.id]);
     res.json({ success: true });
 });
 
 app.get('/api/leaderboard', async (req, res) => {
-    const leaderboard = {};
-    data.stats.forEach(stat => {
-        if (!stat.verified) return;
-        if (!leaderboard[stat.username]) {
-            leaderboard[stat.username] = {
-                username: stat.username,
-                game_nick: stat.game_nick,
-                kills: 0,
-                damage: 0,
-                video_link: stat.video_link
-            };
-        }
-        leaderboard[stat.username].kills += stat.kills;
-        leaderboard[stat.username].damage += stat.damage;
-    });
-    res.json(Object.values(leaderboard).sort((a, b) => b.kills - a.kills));
+    const result = await pool.query(`
+        SELECT username, game_nick, SUM(kills) as kills, SUM(damage) as damage
+        FROM stats
+        WHERE verified = true
+        GROUP BY username, game_nick
+        ORDER BY kills DESC
+        LIMIT 50
+    `);
+    res.json(result.rows);
 });
 
 app.get('/', (req, res) => {
