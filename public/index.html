@@ -18,6 +18,7 @@
             min-height: 100vh;
         }
 
+        /* Header */
         .header {
             background: rgba(10, 10, 10, 0.95);
             backdrop-filter: blur(12px);
@@ -103,6 +104,7 @@
             padding: 2rem 1.5rem;
         }
 
+        /* Cards */
         .card {
             background: rgba(17, 17, 17, 0.85);
             backdrop-filter: blur(4px);
@@ -117,27 +119,32 @@
             border-color: rgba(255, 217, 102, 0.5);
         }
 
-        .auth-card {
-            max-width: 450px;
+        /* Auth Modal - Normal Design */
+        .auth-modal {
+            max-width: 480px;
             margin: 0 auto;
-            text-align: center;
+            background: #1a1a1a;
+            border-radius: 32px;
+            padding: 2rem;
+            border: 1px solid #ffaa33;
         }
 
         .auth-tabs {
             display: flex;
-            gap: 12px;
+            gap: 15px;
             justify-content: center;
-            margin-bottom: 24px;
+            margin-bottom: 30px;
         }
 
         .auth-tab {
-            padding: 8px 32px;
+            padding: 10px 32px;
             border-radius: 40px;
             cursor: pointer;
-            background: #1a1a1a;
+            background: #2c2c2c;
             color: #aaa;
             transition: all 0.2s;
             font-size: 1rem;
+            font-weight: 500;
         }
 
         .auth-tab.active {
@@ -157,7 +164,7 @@
         .auth-form input {
             width: 100%;
             padding: 14px 18px;
-            background: #1e1e1e;
+            background: #0a0a0a;
             border: 1px solid #ffaa3350;
             border-radius: 40px;
             color: #ffdd99;
@@ -228,6 +235,7 @@
             box-shadow: 0 0 8px #ffaa33;
         }
 
+        /* Tabs */
         .tabs {
             display: flex;
             gap: 12px;
@@ -270,6 +278,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -563,26 +572,30 @@
 </div>
 
 <div class="container">
-    <div id="authModal" class="card auth-card" style="display: none;">
-        <div class="auth-tabs">
-            <div class="auth-tab active" onclick="switchAuth('login')">Вход</div>
-            <div class="auth-tab" onclick="switchAuth('register')">Регистрация</div>
-        </div>
-        <div id="loginForm" class="auth-form active">
-            <input type="text" id="loginUsername" placeholder="Логин">
-            <input type="password" id="loginPassword" placeholder="Пароль">
-            <button onclick="doLogin()">Войти</button>
-            <div id="loginMsg"></div>
-        </div>
-        <div id="registerForm" class="auth-form">
-            <input type="text" id="regUsername" placeholder="Логин">
-            <input type="password" id="regPassword" placeholder="Пароль">
-            <input type="text" id="regGameNick" placeholder="Ник в игре" value="Flik_Homixide">
-            <button onclick="doRegister()">Зарегистрироваться</button>
-            <div id="regMsg"></div>
+    <!-- Auth Modal -->
+    <div id="authModal" class="card" style="display: none;">
+        <div class="auth-modal">
+            <div class="auth-tabs">
+                <div class="auth-tab active" onclick="switchAuth('login')">Вход</div>
+                <div class="auth-tab" onclick="switchAuth('register')">Регистрация</div>
+            </div>
+            <div id="loginForm" class="auth-form active">
+                <input type="text" id="loginUsername" placeholder="Логин">
+                <input type="password" id="loginPassword" placeholder="Пароль">
+                <button onclick="doLogin()">Войти</button>
+                <div id="loginMsg"></div>
+            </div>
+            <div id="registerForm" class="auth-form">
+                <input type="text" id="regUsername" placeholder="Логин">
+                <input type="password" id="regPassword" placeholder="Пароль">
+                <input type="text" id="regGameNick" placeholder="Ник в игре" value="Flik_Homixide">
+                <button onclick="doRegister()">Зарегистрироваться</button>
+                <div id="regMsg"></div>
+            </div>
         </div>
     </div>
 
+    <!-- Upload Section -->
     <div id="uploadBlock" class="card" style="display: none;">
         <h2 style="margin-bottom: 16px;">📸 Загрузить скриншот</h2>
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
@@ -597,6 +610,7 @@
         <div id="uploadMsg"></div>
     </div>
 
+    <!-- Main Tabs -->
     <div class="card">
         <div class="tabs">
             <div class="tab active" onclick="showTab('leaderboard')">🏆 ЛИДЕРБОРД</div>
@@ -702,16 +716,18 @@
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
         if (type === 'login') {
-            document.querySelector('.auth-tab:first-child').classList.add('active');
+            document.querySelectorAll('.auth-tab')[0].classList.add('active');
             document.getElementById('loginForm').classList.add('active');
         } else {
-            document.querySelector('.auth-tab:last-child').classList.add('active');
+            document.querySelectorAll('.auth-tab')[1].classList.add('active');
             document.getElementById('registerForm').classList.add('active');
         }
     }
     function showTab(tab) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        const targetTab = document.querySelector(`.tab[onclick="showTab('${tab}')"]`);
+        if (targetTab) targetTab.classList.add('active');
         document.getElementById(tab + 'Tab').classList.add('active');
         if (tab === 'leaderboard') loadLeaderboard();
         if (tab === 'mystats') loadMyStats();
@@ -768,31 +784,15 @@
                             <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
                         </div>
                         <div class="stat-numbers">
-                            <div class="stat-number">
-                                <div class="stat-number-value">${s.kills}</div>
-                                <div class="stat-number-label">💀</div>
-                            </div>
-                            <div class="stat-number">
-                                <div class="stat-number-value">${s.kill_percent || 0}%</div>
-                                <div class="stat-number-label">🎯</div>
-                            </div>
-                            <div class="stat-number">
-                                <div class="stat-number-value">${s.hs_percent || 0}%</div>
-                                <div class="stat-number-label">💥</div>
-                            </div>
-                            <div class="stat-number">
-                                <div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div>
-                                <div class="stat-number-label">⚡</div>
-                            </div>
+                            <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <div>
-                                <span class="stat-status ${s.verified ? 'status-verified' : 'status-pending'}">
-                                    ${s.verified ? '✅ Подтверждена' : '⏳ Ожидает проверки'}
-                                </span>
-                            </div>
-                            <div style="display: flex; gap: 10px;">
-                                ${s.video_link ? `<a href="${s.video_link}" target="_blank" style="color:#ffd966;">🎥 Видео</a>` : ''}
+                            <span class="stat-status ${s.verified ? 'status-verified' : 'status-pending'}">${s.verified ? '✅ Подтверждена' : '⏳ Ожидает'}</span>
+                            <div style="display: flex; gap: 8px;">
+                                ${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : ''}
                                 ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
                                 ${!s.verified ? `<button onclick="deleteMyStat(${s.id})" style="background:#c62828; padding:4px 12px;">🗑️</button>` : ''}
                             </div>
@@ -808,9 +808,10 @@
         await fetch(`/api/stats/${id}`, { method: 'DELETE' });
         loadMyStats();
         loadLeaderboard();
-        showMsg('uploadMsg', '✅ Статистика удалена', false);
+        showMsg('uploadMsg', '✅ Удалено', false);
     }
 
+    // ADMIN PANEL - DIRECT DISPLAY
     async function loadAdminStats() {
         if (!currentUser) {
             document.getElementById('adminList').innerHTML = '<div style="text-align:center; padding:40px;">🔐 Войдите в аккаунт</div>';
@@ -841,45 +842,35 @@
                 return;
             }
             
+            // Прямое создание HTML без лишних проверок
+            let html = '';
             for (let s of unverified) {
-                const card = document.createElement('div');
-                card.className = 'admin-card';
-                card.innerHTML = `
-                    <div class="stat-header">
-                        <span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span>
-                        <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
-                    </div>
-                    <div class="stat-numbers">
-                        <div class="stat-number">
-                            <div class="stat-number-value">${s.kills}</div>
-                            <div class="stat-number-label">💀</div>
+                html += `
+                    <div class="admin-card">
+                        <div class="stat-header">
+                            <span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span>
+                            <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
                         </div>
-                        <div class="stat-number">
-                            <div class="stat-number-value">${s.kill_percent || 0}%</div>
-                            <div class="stat-number-label">🎯</div>
+                        <div class="stat-numbers">
+                            <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div>
                         </div>
-                        <div class="stat-number">
-                            <div class="stat-number-value">${s.hs_percent || 0}%</div>
-                            <div class="stat-number-label">💥</div>
-                        </div>
-                        <div class="stat-number">
-                            <div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div>
-                            <div class="stat-number-label">⚡</div>
-                        </div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px;">
-                        <div>
-                            ${s.video_link ? `<a href="${s.video_link}" target="_blank" style="color:#ffd966;">🎥 Видео</a>` : ''}
-                            ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
-                        </div>
-                        <div>
-                            <button onclick="verifyStat(${s.id})" style="background:#2e7d32;">✅ Подтвердить</button>
-                            <button onclick="deleteStat(${s.id})" style="background:#c62828;">🗑️ Отклонить</button>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                ${s.video_link ? `<a href="${s.video_link}" target="_blank" style="color:#ffd966;">🎥 Видео</a>` : ''}
+                                ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
+                            </div>
+                            <div>
+                                <button onclick="verifyStat(${s.id})" style="background:#2e7d32;">✅ Подтвердить</button>
+                                <button onclick="deleteStat(${s.id})" style="background:#c62828;">🗑️ Отклонить</button>
+                            </div>
                         </div>
                     </div>
                 `;
-                container.appendChild(card);
             }
+            container.innerHTML = html;
             log(`✅ Отображено ${unverified.length} карточек`);
         } catch(e) {
             log(`❌ Ошибка: ${e.message}`);
