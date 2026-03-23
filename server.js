@@ -21,7 +21,6 @@ function loadData() {
             data = { users: [], stats: [] };
         }
         
-        // Админ
         const adminExists = data.users.find(u => u.username === 'admin');
         if (!adminExists) {
             const adminHash = bcrypt.hashSync('gtafak', 10);
@@ -29,56 +28,17 @@ function loadData() {
             console.log('✅ Админ создан');
         }
         
-        // Тестовые записи для админки (всегда 3 штуки)
+        // Тестовые записи если пусто
         const unverifiedCount = data.stats.filter(s => !s.verified).length;
-        if (unverifiedCount < 3) {
-            data.stats = data.stats.filter(s => s.verified);
+        if (unverifiedCount === 0) {
             const testStats = [
-                {
-                    id: Date.now() + 1,
-                    username: 'player1',
-                    game_nick: 'Flik_Homixide',
-                    kills: 142,
-                    kill_percent: 33,
-                    hs_percent: 5,
-                    damage: 16257,
-                    video_link: '',
-                    screenshot: '',
-                    verified: false,
-                    date: new Date().toISOString()
-                },
-                {
-                    id: Date.now() + 2,
-                    username: 'player2',
-                    game_nick: 'Andrey_Chikatilov',
-                    kills: 80,
-                    kill_percent: 26,
-                    hs_percent: 10,
-                    damage: 10948,
-                    video_link: '',
-                    screenshot: '',
-                    verified: false,
-                    date: new Date().toISOString()
-                },
-                {
-                    id: Date.now() + 3,
-                    username: 'player3',
-                    game_nick: 'Avi_Effexx',
-                    kills: 86,
-                    kill_percent: 26,
-                    hs_percent: 6,
-                    damage: 11039,
-                    video_link: '',
-                    screenshot: '',
-                    verified: false,
-                    date: new Date().toISOString()
-                }
+                { id: Date.now() + 1, username: 'player1', game_nick: 'Flik_Homixide', kills: 142, kill_percent: 33, hs_percent: 5, damage: 16257, video_link: '', screenshot: '', verified: false, date: new Date().toISOString() },
+                { id: Date.now() + 2, username: 'player2', game_nick: 'Andrey_Chikatilov', kills: 80, kill_percent: 26, hs_percent: 10, damage: 10948, video_link: '', screenshot: '', verified: false, date: new Date().toISOString() }
             ];
             data.stats.push(...testStats);
             saveData();
-            console.log('📊 Добавлены тестовые записи в админ-панель');
+            console.log('📊 Добавлены тестовые записи');
         }
-        
     } catch(e) { console.error('Ошибка загрузки:', e); }
 }
 
@@ -172,7 +132,6 @@ app.post('/api/stats', async (req, res) => {
         };
         data.stats.push(newStat);
         saveData();
-        console.log(`✅ Статистика сохранена: ${username} - ${kills} убийств, ${damage} урона`);
         res.json({ success: true });
     } catch (e) {
         console.error(e);
@@ -187,8 +146,6 @@ app.get('/api/stats/my', async (req, res) => {
 });
 
 app.get('/api/stats/all', async (req, res) => {
-    const unverified = data.stats.filter(s => !s.verified);
-    console.log(`📋 Запрос всех статистик: всего ${data.stats.length}, неподтверждённых: ${unverified.length}`);
     res.json(data.stats);
 });
 
@@ -197,7 +154,6 @@ app.put('/api/stats/:id/verify', async (req, res) => {
     if (stat) {
         stat.verified = true;
         saveData();
-        console.log(`✅ Подтверждена запись ${req.params.id}`);
     }
     res.json({ success: true });
 });
@@ -205,7 +161,6 @@ app.put('/api/stats/:id/verify', async (req, res) => {
 app.delete('/api/stats/:id', async (req, res) => {
     data.stats = data.stats.filter(s => s.id != req.params.id);
     saveData();
-    console.log(`🗑️ Удалена запись ${req.params.id}`);
     res.json({ success: true });
 });
 
@@ -235,6 +190,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ Сервер на порту ${PORT}`);
     console.log(`👑 Админ: admin / gtafak`);
-    const unverifiedCount = data.stats.filter(s => !s.verified).length;
-    console.log(`📊 В админ-панели ${unverifiedCount} неподтверждённых записей`);
 });
