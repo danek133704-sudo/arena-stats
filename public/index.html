@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arena Stats | Трекер статистики</title>
+    <title>Arena Stats</title>
     <style>
         * {
             margin: 0;
@@ -117,6 +117,68 @@
 
         .card:hover {
             border-color: rgba(255, 217, 102, 0.5);
+        }
+
+        /* Auth Modal */
+        .auth-card {
+            max-width: 450px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .auth-tab {
+            padding: 8px 32px;
+            border-radius: 40px;
+            cursor: pointer;
+            background: #1a1a1a;
+            color: #aaa;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .auth-tab.active {
+            background: #ffaa33;
+            color: #0a0a0a;
+            font-weight: bold;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .auth-form input {
+            width: 100%;
+            padding: 14px 18px;
+            background: #1e1e1e;
+            border: 1px solid #ffaa3350;
+            border-radius: 40px;
+            color: #ffdd99;
+            margin: 12px 0;
+            font-size: 1rem;
+        }
+
+        .auth-form input:focus {
+            outline: none;
+            border-color: #ffaa33;
+            box-shadow: 0 0 8px #ffaa33;
+        }
+
+        .auth-form button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 16px;
+            font-size: 1rem;
         }
 
         /* Upload Area */
@@ -511,18 +573,18 @@
 
 <div class="container">
     <!-- Auth Modal -->
-    <div id="authModal" class="card" style="display: none;">
-        <div class="tabs" style="border: none;">
-            <div class="tab active" onclick="switchAuth('login')">Вход</div>
-            <div class="tab" onclick="switchAuth('register')">Регистрация</div>
+    <div id="authModal" class="card auth-card" style="display: none;">
+        <div class="auth-tabs">
+            <div class="auth-tab active" onclick="switchAuth('login')">Вход</div>
+            <div class="auth-tab" onclick="switchAuth('register')">Регистрация</div>
         </div>
-        <div id="loginForm">
+        <div id="loginForm" class="auth-form active">
             <input type="text" id="loginUsername" placeholder="Логин">
             <input type="password" id="loginPassword" placeholder="Пароль">
             <button onclick="doLogin()">Войти</button>
             <div id="loginMsg"></div>
         </div>
-        <div id="registerForm" style="display: none;">
+        <div id="registerForm" class="auth-form">
             <input type="text" id="regUsername" placeholder="Логин">
             <input type="password" id="regPassword" placeholder="Пароль">
             <input type="text" id="regGameNick" placeholder="Ник в игре" value="Flik_Homixide">
@@ -650,8 +712,15 @@
     function toggleProfile() { const d = document.getElementById('profileDropdown'); d.style.display = d.style.display === 'none' ? 'block' : 'none'; }
     function showAuthModal() { document.getElementById('authModal').style.display = 'flex'; }
     function switchAuth(type) {
-        document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
-        document.getElementById('registerForm').style.display = type === 'register' ? 'block' : 'none';
+        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+        if (type === 'login') {
+            document.querySelector('.auth-tab:first-child').classList.add('active');
+            document.getElementById('loginForm').classList.add('active');
+        } else {
+            document.querySelector('.auth-tab:last-child').classList.add('active');
+            document.getElementById('registerForm').classList.add('active');
+        }
     }
     function showTab(tab) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -757,7 +826,7 @@
         showMsg('uploadMsg', '✅ Статистика удалена', false);
     }
 
-    // ADMIN PANEL - FIXED
+    // ADMIN PANEL
     async function loadAdminStats() {
         if (!currentUser) {
             document.getElementById('adminList').innerHTML = '<div style="text-align:center; padding:40px;">🔐 Войдите в аккаунт</div>';
