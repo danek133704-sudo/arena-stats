@@ -101,12 +101,19 @@ app.put('/api/profile', async (req, res) => {
         const user = data.users.find(u => u.username === username);
         if (user) {
             user.game_nick = gameNick;
+            // ОБНОВЛЯЕМ НИК ВО ВСЕЙ СТАТИСТИКЕ ПОЛЬЗОВАТЕЛЯ
+            data.stats.forEach(stat => {
+                if (stat.username === username) {
+                    stat.game_nick = gameNick;
+                }
+            });
             saveData();
             res.json({ success: true, user: { username: user.username, gameNick: user.game_nick, role: user.role } });
         } else {
             res.status(404).json({ error: 'Пользователь не найден' });
         }
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'Ошибка' });
     }
 });
