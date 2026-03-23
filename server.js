@@ -1,243 +1,154 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const bcrypt = require('bcryptjs');
-const app = express();
-const PORT = process.env.PORT || 3000;
+const jwt = require('jsonwebtoken');
+const { Pool } = require('pg');
 
+const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
-const DATA_FILE = path.join(__dirname, 'data.json');
+const SECRET = 'super_secret_key';
 
-let data = { users: [], stats: [] };
+const pool = new Pool({
+    connectionString: 'postgresql://postgres:1234@localhost:5432/arena'
+});
 
-function loadData() {
-    try {
-        if (fs.existsSync(DATA_FILE)) {
-            data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-            console.log(`📁 Загружено: ${data.users.length} пользователей, ${data.stats.length} записей`);
-        } else {
-            data = { users: [], stats: [] };
-        }
-        
-        // Проверяем админа
-        const adminExists = data.users.find(u => u.username === 'admin');
-        if (!adminExists) {
-            const adminHash = bcrypt.hashSync('gtafak', 10);
-            data.users.push({ id: 1, username: 'admin', password: adminHash, game_nick: 'Admin', role: 'admin' });
-            console.log('✅ Админ создан');
-        }
-        
-        // ПРИНУДИТЕЛЬНО ДОБАВЛЯЕМ ТЕСТОВЫЕ ЗАПИСИ, ЕСЛИ ИХ НЕТ
-        const unverifiedCount = data.stats.filter(s => !s.verified).length;
-        if (unverifiedCount < 3) {
-            // Удаляем старые неподтверждённые
-            data.stats = data.stats.filter(s => s.verified);
-            
-            // Добавляем новые тестовые
-            const testStats = [
-                {
-                    id: Date.now() + 1,
-                    username: 'player1',
-                    game_nick: 'Flik_Homixide',
-                    kills: 142,
-                    kill_percent: 33,
-                    hs_percent: 5,
-                    damage: 16257,
-                    video_link: '',
-                    screenshot: '',
-                    verified: false,
-                    date: new Date().toISOString()
-                },
-                {
-                    id: Date.now() + 2,
-                    username: 'player2',
-                    game_nick: 'Andrey_Chikatilov',
-                    kills: 80,
-                    kill_percent: 26,
-                    hs_percent: 10,
-                    damage: 10948,
-                    video_link: '',
-                    screenshot: '',
-                    verified: false,
-                    date: new Date().toISOString()
-                },
-                {
-                    id: Date.now() + 3,
-                    username: 'player3',
-                    game_nick: 'Avi_Effexx',
-                    kills: 86,
-                    kill_percent: 26,
-                    hs_percent: 6,
-                    damage: 11039,
-                    video_link: '',
-                    screenshot: '',
-                    verified: false,
-                    date: new Date().toISOString()
-                }
-            ];
-            data.stats.push(...testStats);
-            saveData();
-            console.log('📊 Добавлены тестовые записи в админ-панель (3 штуки)');
-        }
-        
-    } catch(e) { console.error('Ошибка загрузки:', e); }
-}
-
-function saveData() {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    console.log('💾 Данные сохранены');
-}
-
-loadData();
-
+/// REGISTER
 app.post('/api/register', async (req, res) => {
+    const { username, password, gameNick } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Заполни все поля' });
+    }
+
     try {
-        const { username, password, gameNick } = req.body;
-        if (data.users.find(u => u.username === username)) {
-            return res.status(400).json({ error: 'Пользователь уже существует' });
-        }
         const hash = bcrypt.hashSync(password, 10);
-        data.users.push({
-            id: Date.now(),
-            username,
-            password: hash,
-            game_nick: gameNick || username,
-            role: 'user'
-        });
-        saveData();
+
+        await pool.query(
+            'INSERT INTO users(username,password,game_nick) VALUES($1,$2,$3)',
+            [username, hash, gameNick || username]
+        );
+
         res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: 'Ошибка сервера' });
+
+    } catch {
+        res.status(400).json({ error: 'Пользователь уже существует' });
     }
 });
 
+/// LOGIN
 app.post('/api/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        const user = data.users.find(u => u.username === username);
-        if (!user) {
-            return res.status(400).json({ error: 'Пользователь не найден' });
-        }
-        const match = bcrypt.compareSync(password, user.password);
-        if (!match) {
-            return res.status(400).json({ error: 'Неверный пароль' });
-        }
-        res.json({
-            success: true,
-            user: {
-                id: user.id,
-                username: user.username,
-                gameNick: user.game_nick,
-                role: user.role
-            }
-        });
-    } catch (e) {
-        res.status(500).json({ error: 'Ошибка входа' });
+    const { username, password } = req.body;
+
+    const result = await pool.query(
+        'SELECT * FROM users WHERE username=$1',
+        [username]
+    );
+
+    if (!result.rows.length) {
+        return res.status(400).json({ error: 'Нет пользователя' });
     }
+
+    const user = result.rows[0];
+
+    if (!bcrypt.compareSync(password, user.password)) {
+        return res.status(400).json({ error: 'Неверный пароль' });
+    }
+
+    const token = jwt.sign(
+        { id: user.id, username: user.username, role: user.role },
+        SECRET
+    );
+
+    res.json({ token, user });
 });
 
-app.put('/api/profile', async (req, res) => {
-    try {
-        const { username, gameNick } = req.body;
-        const user = data.users.find(u => u.username === username);
-        if (user) {
-            user.game_nick = gameNick;
-            saveData();
-            res.json({ success: true, user: { username: user.username, gameNick: user.game_nick, role: user.role } });
-        } else {
-            res.status(404).json({ error: 'Пользователь не найден' });
-        }
-    } catch (e) {
-        res.status(500).json({ error: 'Ошибка' });
-    }
-});
-
+/// ADD STATS
 app.post('/api/stats', async (req, res) => {
+    const token = req.headers.authorization;
+    if (!token) return res.sendStatus(401);
+
+    let user;
     try {
-        const { username, kills, killPercent, hsPercent, damage, videoLink, screenshot } = req.body;
-        const user = data.users.find(u => u.username === username);
-        if (!user) return res.status(400).json({ error: 'Пользователь не найден' });
-        
-        const newStat = {
-            id: Date.now(),
-            username,
-            game_nick: user.game_nick,
-            kills: kills || 0,
-            kill_percent: killPercent || 0,
-            hs_percent: hsPercent || 0,
-            damage: damage || 0,
-            video_link: videoLink || '',
-            screenshot: screenshot || '',
-            verified: user.role === 'admin' ? true : false,
-            date: new Date().toISOString()
-        };
-        data.stats.push(newStat);
-        saveData();
-        console.log(`✅ Статистика сохранена: ${username} - ${kills} убийств, ${damage} урона`);
-        res.json({ success: true });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Ошибка' });
+        user = jwt.verify(token, SECRET);
+    } catch {
+        return res.sendStatus(401);
     }
+
+    const { kills, killPercent, hsPercent, damage, videoLink, screenshot } = req.body;
+
+    await pool.query(
+        `INSERT INTO stats(user_id,kills,kill_percent,hs_percent,damage,video_link,screenshot)
+         VALUES($1,$2,$3,$4,$5,$6,$7)`,
+        [user.id, kills, killPercent, hsPercent, damage, videoLink, screenshot]
+    );
+
+    res.json({ success: true });
 });
 
+/// MY STATS
 app.get('/api/stats/my', async (req, res) => {
-    const username = req.headers.username;
-    const myStats = data.stats.filter(s => s.username === username);
-    res.json(myStats);
+    const token = req.headers.authorization;
+    if (!token) return res.sendStatus(401);
+
+    const user = jwt.verify(token, SECRET);
+
+    const result = await pool.query(`
+        SELECT s.*, u.game_nick 
+        FROM stats s
+        JOIN users u ON u.id=s.user_id
+        WHERE user_id=$1
+    `, [user.id]);
+
+    res.json(result.rows);
 });
 
+/// ADMIN
 app.get('/api/stats/all', async (req, res) => {
-    const unverified = data.stats.filter(s => !s.verified);
-    console.log(`📋 Запрос всех статистик: всего ${data.stats.length}, неподтверждённых: ${unverified.length}`);
-    res.json(data.stats);
+    const token = req.headers.authorization;
+    const user = jwt.verify(token, SECRET);
+
+    if (user.role !== 'admin') return res.sendStatus(403);
+
+    const result = await pool.query(`
+        SELECT s.*, u.game_nick 
+        FROM stats s
+        JOIN users u ON u.id=s.user_id
+    `);
+
+    res.json(result.rows);
 });
 
 app.put('/api/stats/:id/verify', async (req, res) => {
-    const stat = data.stats.find(s => s.id == req.params.id);
-    if (stat) {
-        stat.verified = true;
-        saveData();
-        console.log(`✅ Подтверждена запись ${req.params.id}`);
-    }
+    const user = jwt.verify(req.headers.authorization, SECRET);
+    if (user.role !== 'admin') return res.sendStatus(403);
+
+    await pool.query('UPDATE stats SET verified=true WHERE id=$1', [req.params.id]);
     res.json({ success: true });
 });
 
 app.delete('/api/stats/:id', async (req, res) => {
-    data.stats = data.stats.filter(s => s.id != req.params.id);
-    saveData();
-    console.log(`🗑️ Удалена запись ${req.params.id}`);
+    const user = jwt.verify(req.headers.authorization, SECRET);
+    if (user.role !== 'admin') return res.sendStatus(403);
+
+    await pool.query('DELETE FROM stats WHERE id=$1', [req.params.id]);
     res.json({ success: true });
 });
 
+/// LEADERBOARD
 app.get('/api/leaderboard', async (req, res) => {
-    const leaderboard = {};
-    data.stats.forEach(stat => {
-        if (!stat.verified) return;
-        if (!leaderboard[stat.username]) {
-            leaderboard[stat.username] = {
-                username: stat.username,
-                game_nick: stat.game_nick,
-                kills: 0,
-                damage: 0,
-                video_link: stat.video_link
-            };
-        }
-        leaderboard[stat.username].kills += stat.kills;
-        leaderboard[stat.username].damage += stat.damage;
-    });
-    res.json(Object.values(leaderboard).sort((a, b) => b.kills - a.kills));
+    const result = await pool.query(`
+        SELECT u.game_nick,
+               SUM(kills) as kills,
+               SUM(damage) as damage
+        FROM stats s
+        JOIN users u ON u.id=s.user_id
+        WHERE verified=true
+        GROUP BY u.game_nick
+        ORDER BY kills DESC
+    `);
+
+    res.json(result.rows);
 });
 
-app.get('/', (req, res) => {
-    res.sendFile('index.html', { root: 'public' });
-});
-
-app.listen(PORT, () => {
-    console.log(`✅ Сервер на порту ${PORT}`);
-    console.log(`👑 Админ: admin / gtafak`);
-    const unverifiedCount = data.stats.filter(s => !s.verified).length;
-    console.log(`📊 В админ-панели ${unverifiedCount} неподтверждённых записей`);
-});
+app.listen(3000, () => console.log('🚀 Server started'));
