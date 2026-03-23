@@ -58,7 +58,8 @@
         .auth-form input { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 10px 0; }
         .preview-image { max-width: 100%; max-height: 200px; border-radius: 16px; cursor: pointer; margin-top: 10px; }
         .admin-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #ffd966; }
-        .retry-btn { background: #ffaa33; color: #0a0a0a; margin-left: 10px; padding: 4px 12px; font-size: 12px; }
+        .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #ffd966; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 10px; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 700px) { .stats-grid { grid-template-columns: 1fr; } .header-content { flex-direction: column; text-align: center; } }
     </style>
 </head>
@@ -135,7 +136,83 @@
     let currentUser = null, currentImageData = null, recognizedStats = null, ocrWorker = null;
     let localNick = localStorage.getItem('arena_nick') || 'Flik_Homixide';
 
-    function showMsg(elId, msg, isError) { const el = document.getElementById(elId); if (el) { el.innerHTML = `<div class="status-msg ${isError ? 'error' : 'success'}">${msg}</div>`; setTimeout(() => el.innerHTML = '', 4000); } }
+    // ========== УЛУЧШЕНИЕ ИЗОБРАЖЕНИЯ ==========
+    function enhanceImage(base64) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                // Получаем пиксели
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                // 1. Увеличиваем контраст и делаем ч/б с адаптивным порогом
+                // Вычисляем среднюю яркость для адаптивного порога
+                let sum = 0;
+                for (let i = 0; i < data.length; i += 4) {
+                    const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+                    sum += brightness;
+                }
+                const avgBrightness = sum / (data.length / 4);
+                const threshold = avgBrightness * 0.8; // адаптивный порог
+                
+                // 2. Применяем фильтр повышения резкости (unsharp mask)
+                // Сначала создаём копию для размытия
+                const blurred = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const blurredData = blurred.data;
+                
+                // Простое размытие по соседям
+                for (let y = 1; y < canvas.height - 1; y++) {
+                    for (let x = 1; x < canvas.width - 1; x++) {
+                        const idx = (y * canvas.width + x) * 4;
+                        let rSum = 0, gSum = 0, bSum = 0;
+                        for (let dy = -1; dy <= 1; dy++) {
+                            for (let dx = -1; dx <= 1; dx++) {
+                                const nIdx = ((y + dy) * canvas.width + (x + dx)) * 4;
+                                rSum += data[nIdx];
+                                gSum += data[nIdx + 1];
+                                bSum += data[nIdx + 2];
+                            }
+                        }
+                        blurredData[idx] = rSum / 9;
+                        blurredData[idx + 1] = gSum / 9;
+                        blurredData[idx + 2] = bSum / 9;
+                    }
+                }
+                
+                // 3. Применяем ч/б с адаптивным порогом и повышение резкости
+                for (let i = 0; i < data.length; i += 4) {
+                    const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+                    const blurredBrightness = (blurredData[i] + blurredData[i+1] + blurredData[i+2]) / 3;
+                    // Повышение резкости: оригинал + (оригинал - размытое)
+                    let sharpened = brightness + (brightness - blurredBrightness) * 1.2;
+                    sharpened = Math.min(255, Math.max(0, sharpened));
+                    // Ч/Б с адаптивным порогом
+                    const value = sharpened > threshold ? 255 : 0;
+                    data[i] = value;
+                    data[i+1] = value;
+                    data[i+2] = value;
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.src = base64;
+        });
+    }
+
+    function showMsg(elId, msg, isError) { 
+        const el = document.getElementById(elId); 
+        if (el) { 
+            el.innerHTML = `<div class="status-msg ${isError ? 'error' : 'success'}">${msg}</div>`; 
+            setTimeout(() => el.innerHTML = '', 4000); 
+        } 
+    }
     
     async function saveNick() {
         const newNick = document.getElementById('nickInput').value.trim();
@@ -152,17 +229,16 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: currentUser.username, gameNick: newNick })
         });
-        const data = await res.json();
         if (res.ok) {
-            currentUser.gameNick = data.user.gameNick;
+            currentUser.gameNick = newNick;
             localStorage.setItem('user', JSON.stringify(currentUser));
-            document.getElementById('currentNickDisplay').innerText = currentUser.gameNick;
-            showMsg('uploadMsg', `✅ Ник обновлён: ${currentUser.gameNick}`, false);
+            document.getElementById('currentNickDisplay').innerText = newNick;
+            showMsg('uploadMsg', `✅ Ник обновлён: ${newNick}`, false);
             loadLeaderboard();
             loadMyStats();
             if (currentUser.role === 'admin') loadAdminStatsDirect();
         } else {
-            showMsg('uploadMsg', `❌ ${data.error}`, true);
+            showMsg('uploadMsg', `❌ Ошибка`, true);
         }
         document.getElementById('nickInput').value = '';
     }
@@ -300,11 +376,14 @@
     async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Удалено', false); }
 
-    // УЛУЧШЕННАЯ НЕЙРОНКА С ПОДДЕРЖКОЙ ПОВТОРНОЙ ЗАГРУЗКИ
+    // ========== НЕЙРОНКА С УЛУЧШЕНИЕМ КАРТИНКИ ==========
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
         if (!nickToFind) return null;
+        
+        // Улучшаем изображение перед распознаванием
+        const enhancedImage = await enhanceImage(currentImageData);
         
         if (!ocrWorker) {
             ocrWorker = await Tesseract.createWorker('rus+eng', 1);
@@ -314,7 +393,7 @@
             });
         }
         
-        const { data: { text } } = await ocrWorker.recognize(currentImageData);
+        const { data: { text } } = await ocrWorker.recognize(enhancedImage);
         
         const lines = text.split('\n');
         const nickLower = nickToFind.toLowerCase();
@@ -353,17 +432,23 @@
                 return; 
             }
             
-            document.getElementById('ocrResult').innerHTML = `🔍 Распознавание...`;
+            document.getElementById('ocrResult').innerHTML = `🔍 Улучшение изображения и распознавание... <span class="loading-spinner"></span>`;
             document.getElementById('ocrResult').style.display = 'block';
             document.getElementById('sendBtn').style.display = 'none';
             
-            const stats = await findMyStatsInScreenshot();
-            if (stats) {
-                recognizedStats = stats;
-                document.getElementById('ocrResult').innerHTML = `✅ Найдено! 💀${stats.kills} | 🎯${stats.killPercent}% | 💥${stats.hsPercent}% | ⚡${stats.damage.toLocaleString()}`;
-                document.getElementById('sendBtn').style.display = 'block';
-            } else {
-                document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}" в таблице. Попробуйте другой скриншот.`;
+            try {
+                const stats = await findMyStatsInScreenshot();
+                if (stats) {
+                    recognizedStats = stats;
+                    document.getElementById('ocrResult').innerHTML = `✅ Найдено! 💀${stats.kills} | 🎯${stats.killPercent}% | 💥${stats.hsPercent}% | ⚡${stats.damage.toLocaleString()}`;
+                    document.getElementById('sendBtn').style.display = 'block';
+                } else {
+                    document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}" в таблице. Попробуйте другой скриншот.`;
+                    document.getElementById('sendBtn').style.display = 'none';
+                    recognizedStats = null;
+                }
+            } catch (error) {
+                document.getElementById('ocrResult').innerHTML = `❌ Ошибка: ${error.message}`;
                 document.getElementById('sendBtn').style.display = 'none';
                 recognizedStats = null;
             }
