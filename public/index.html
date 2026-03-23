@@ -5,39 +5,486 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arena Stats</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
-        body { background: #0a0a0a; color: #ffd966; padding: 20px; font-family: monospace; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .card { background: #1a1a1a; border: 1px solid #ffd966; border-radius: 20px; padding: 20px; margin-bottom: 20px; }
-        .upload-area { border: 2px dashed #ffd966; border-radius: 15px; padding: 30px; text-align: center; cursor: pointer; margin: 15px 0; }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 30px; border: none; }
-        input { background: #2c2c2c; color: #ffd966; }
-        button { background: #ffd966; color: #000; font-weight: bold; cursor: pointer; }
-        .stat-item { background: #2c2c2c; padding: 15px; margin: 10px 0; border-radius: 15px; border-left: 4px solid #ffd966; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab { padding: 10px 20px; background: #2c2c2c; border-radius: 30px; cursor: pointer; }
-        .tab.active { background: #ffd966; color: #000; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .debug { background: #111; padding: 10px; margin-top: 10px; font-size: 11px; color: #0f0; max-height: 200px; overflow: auto; }
-        .nick-row { display: flex; gap: 10px; align-items: center; }
-        .nick-row input { flex: 1; }
-        .nick-row button { width: auto; padding: 8px 20px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            min-height: 100vh;
+            color: #ffd966;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            border-bottom: 1px solid rgba(255, 217, 102, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            background: linear-gradient(135deg, #ffd966, #ffaa33);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo p {
+            font-size: 12px;
+            color: #ffd966aa;
+        }
+
+        .telegram-link {
+            background: #1a1a1a;
+            padding: 8px 20px;
+            border-radius: 30px;
+            border: 1px solid #ffd966;
+            transition: all 0.3s;
+        }
+
+        .telegram-link a {
+            color: #ffd966;
+            text-decoration: none;
+        }
+
+        .telegram-link:hover {
+            background: #ffd966;
+        }
+
+        .telegram-link:hover a {
+            color: #1a1a1a;
+        }
+
+        /* Buttons */
+        button {
+            background: linear-gradient(135deg, #ffd966, #ffaa33);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #1a1a1a;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 217, 102, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #ffd966;
+            color: #ffd966;
+        }
+
+        .btn-outline:hover {
+            background: #ffd96622;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        /* Cards */
+        .card {
+            background: #111111cc;
+            border-radius: 28px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 217, 102, 0.2);
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 217, 102, 0.5);
+        }
+
+        /* Upload area */
+        .upload-area {
+            border: 2px dashed #ffd966;
+            border-radius: 24px;
+            padding: 35px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #0a0a0a;
+        }
+
+        .upload-area:hover {
+            background: #ffd96611;
+            border-color: #ffaa33;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 18px;
+            background: #1e1e1e;
+            border: 1px solid #ffd96633;
+            border-radius: 40px;
+            color: #ffd966;
+            margin: 10px 0;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #ffd966;
+            box-shadow: 0 0 8px #ffd966;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #ffd96633;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 28px;
+            cursor: pointer;
+            color: #ffd966aa;
+            border-radius: 40px 40px 0 0;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            color: #ffd966;
+            background: #ffd96611;
+            border-bottom: 2px solid #ffd966;
+        }
+
+        .tab:hover {
+            color: #ffd966;
+            background: #ffd96611;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Stat Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: #1a1a1a;
+            border-radius: 20px;
+            padding: 18px;
+            border-left: 4px solid #ffd966;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ffd96633;
+        }
+
+        .stat-nick {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd966;
+        }
+
+        .stat-date {
+            font-size: 12px;
+            color: #ffd966aa;
+        }
+
+        .stat-numbers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 12px 0;
+        }
+
+        .stat-number {
+            background: #0a0a0a;
+            padding: 8px 12px;
+            border-radius: 12px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-number-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffd966;
+        }
+
+        .stat-number-label {
+            font-size: 11px;
+            color: #ffd966aa;
+        }
+
+        .stat-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-verified {
+            background: #2e7d3240;
+            color: #4caf50;
+            border: 1px solid #4caf50;
+        }
+
+        .status-pending {
+            background: #ff980040;
+            color: #ff9800;
+            border: 1px solid #ff9800;
+        }
+
+        .stat-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .stat-actions button {
+            padding: 6px 16px;
+            font-size: 12px;
+        }
+
+        .screenshot-thumb {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .screenshot-thumb:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 8px #ffd966;
+        }
+
+        /* Leaderboard Cards */
+        .leaderboard-card {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.2s;
+        }
+
+        .leaderboard-card:hover {
+            background: #2a2a2a;
+            transform: translateX(5px);
+        }
+
+        .leaderboard-rank {
+            font-size: 28px;
+            font-weight: bold;
+            width: 50px;
+            text-align: center;
+        }
+
+        .rank-1 { color: gold; text-shadow: 0 0 5px gold; }
+        .rank-2 { color: silver; }
+        .rank-3 { color: #cd7f32; }
+
+        .leaderboard-info {
+            flex: 1;
+        }
+
+        .leaderboard-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .leaderboard-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 5px;
+            font-size: 13px;
+            color: #ffd966aa;
+        }
+
+        /* Profile Dropdown */
+        .profile-menu {
+            position: relative;
+            display: inline-block;
+        }
+
+        .profile-dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: #1a1a1a;
+            border: 1px solid #ffd966;
+            border-radius: 20px;
+            padding: 20px;
+            min-width: 260px;
+            z-index: 100;
+            margin-top: 10px;
+            backdrop-filter: blur(8px);
+        }
+
+        .nick-edit {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .nick-edit input {
+            flex: 1;
+            margin: 0;
+            padding: 8px 12px;
+        }
+
+        .nick-edit button {
+            padding: 8px 16px;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            cursor: pointer;
+        }
+
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 16px;
+        }
+
+        .status-msg {
+            padding: 12px;
+            border-radius: 12px;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .status-success {
+            background: #2e7d3240;
+            color: #4caf50;
+            border: 1px solid #4caf50;
+        }
+
+        .status-error {
+            background: #c6282840;
+            color: #ff6b6b;
+            border: 1px solid #c62828;
+        }
+
+        .debug-panel {
+            background: #0a0a0a;
+            padding: 12px;
+            border-radius: 16px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #5f5;
+            max-height: 200px;
+            overflow: auto;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 700px) {
+            .container { padding: 15px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .leaderboard-card { flex-wrap: wrap; }
+            .header-content { flex-direction: column; text-align: center; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card" style="text-align: center;">
-        <h1>⚔️ ARENA STATS</h1>
-        <p><a href="https://t.me/flikfak" target="_blank" style="color:#ffd966;">🤝 @flikfak — сотрудничество</a></p>
+<div class="header">
+    <div class="header-content">
+        <div class="logo">
+            <h1>⚔️ ARENA STATS</h1>
+            <p>Трекер статистики | Общий лидерборд</p>
+        </div>
+        <div class="telegram-link">
+            <a href="https://t.me/flikfak" target="_blank">🤝 @flikfak — сотрудничество</a>
+        </div>
+        <div id="authArea">
+            <button id="showAuthBtn" onclick="showAuthModal()">🔐 Вход / Регистрация</button>
+            <div id="userInfo" style="display: none;">
+                <span id="userNameDisplay"></span>
+                <div class="profile-menu" style="display: inline-block; margin-left: 12px;">
+                    <button class="btn-outline" onclick="toggleProfile()">👤 Профиль</button>
+                    <div id="profileDropdown" class="profile-dropdown" style="display: none;">
+                        <div><strong>Игровой ник:</strong> <span id="currentNickDisplay">Flik_Homixide</span></div>
+                        <div class="nick-edit">
+                            <input type="text" id="nickInput" placeholder="Новый ник">
+                            <button onclick="saveNick()">Сохранить</button>
+                        </div>
+                        <button onclick="logout()" class="btn-outline" style="margin-top: 15px; width: 100%;">🚪 Выйти</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 
-    <!-- Авторизация -->
-    <div id="authBlock" class="card">
-        <div class="tabs">
-            <div class="tab active" onclick="showAuthForm('login')">Вход</div>
-            <div class="tab" onclick="showAuthForm('register')">Регистрация</div>
+<div class="container">
+    <!-- Auth Modal -->
+    <div id="authModal" class="card" style="display: none;">
+        <div class="tabs" style="border: none;">
+            <div class="tab active" onclick="switchAuth('login')">Вход</div>
+            <div class="tab" onclick="switchAuth('register')">Регистрация</div>
         </div>
         <div id="loginForm">
             <input type="text" id="loginUsername" placeholder="Логин">
@@ -45,7 +492,7 @@
             <button onclick="doLogin()">Войти</button>
             <div id="loginMsg"></div>
         </div>
-        <div id="registerForm" style="display:none;">
+        <div id="registerForm" style="display: none;">
             <input type="text" id="regUsername" placeholder="Логин">
             <input type="password" id="regPassword" placeholder="Пароль">
             <input type="text" id="regGameNick" placeholder="Ник в игре" value="Flik_Homixide">
@@ -54,40 +501,31 @@
         </div>
     </div>
 
-    <!-- Профиль (ник) -->
-    <div id="profileBlock" class="card" style="display:none;">
-        <div class="nick-row">
-            <input type="text" id="nickInput" placeholder="Твой ник как на скриншоте">
-            <button onclick="saveNick()">💾 Сохранить ник</button>
-        </div>
-        <div>Текущий ник: <strong id="currentNickDisplay">Flik_Homixide</strong></div>
-        <button onclick="logout()" class="btn-outline" style="background:#333; color:#ffd966; margin-top:10px;">🚪 Выйти</button>
-    </div>
-
-    <!-- Загрузка скриншота -->
-    <div id="uploadBlock" class="card" style="display:none;">
-        <h3>📸 Загрузить скриншот</h3>
+    <!-- Upload Section -->
+    <div id="uploadBlock" class="card" style="display: none;">
+        <h2 style="margin-bottom: 15px;">📸 Загрузить скриншот</h2>
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-            📸 Нажми или перетащи скриншот
+            <div style="font-size: 44px; margin-bottom: 10px;">📸</div>
+            <p>Нажми или перетащи скриншот с таблицей статистики</p>
             <input type="file" id="fileInput" hidden accept="image/*">
         </div>
-        <div id="preview"></div>
-        <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео">
-        <div id="ocrResult" style="background:#2c2c2c; padding:10px; border-radius:15px; margin:10px 0; display:none;"></div>
-        <button id="sendBtn" style="display:none;" onclick="sendStats()">📤 Отправить статистику</button>
+        <div id="preview" style="text-align: center;"></div>
+        <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео (YouTube/Twitch)">
+        <div id="ocrResult" style="background: #0a0a0a; padding: 15px; border-radius: 20px; margin: 15px 0; display: none;"></div>
+        <button id="sendBtn" style="display: none;" onclick="sendStats()">📤 Отправить статистику</button>
         <div id="uploadMsg"></div>
     </div>
 
-    <!-- Вкладки -->
+    <!-- Main Tabs -->
     <div class="card">
         <div class="tabs">
-            <div class="tab active" onclick="showTab('leaderboard')">🏆 Лидерборд</div>
-            <div class="tab" onclick="showTab('mystats')">📋 Моя статистика</div>
-            <div class="tab" id="adminTab" style="display:none;" onclick="showTab('admin')">🔧 Админ-панель</div>
+            <div class="tab active" onclick="showTab('leaderboard')">🏆 ЛИДЕРБОРД</div>
+            <div class="tab" onclick="showTab('mystats')">📊 МОЯ СТАТИСТИКА</div>
+            <div class="tab" id="adminTab" style="display: none;" onclick="showTab('admin')">🔧 АДМИН-ПАНЕЛЬ</div>
         </div>
 
         <div id="leaderboardTab" class="tab-content active">
-            <input type="text" id="searchPlayer" placeholder="🔍 Поиск игрока..." style="margin-bottom:10px;">
+            <input type="text" id="searchPlayer" placeholder="🔍 Поиск игрока..." style="margin-bottom: 20px;">
             <div id="leaderboardList"></div>
         </div>
 
@@ -100,13 +538,11 @@
         </div>
     </div>
 
-    <!-- Отладка -->
-    <div class="card" style="background:#111;">
-        <details>
-            <summary>🔧 Отладка (нажми чтобы открыть)</summary>
-            <div id="debugLog" class="debug"></div>
-        </details>
-    </div>
+    <!-- Debug -->
+    <details style="margin-top: 20px;">
+        <summary style="color: #ffd966aa; cursor: pointer;">🔧 Отладка</summary>
+        <div id="debugLog" class="debug-panel"></div>
+    </details>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -126,16 +562,14 @@
         console.log(msg);
     }
 
-    // Показать сообщение
-    function showMsg(elId, msg, isError = false) {
+    function showMsg(elId, msg, isError) {
         const el = document.getElementById(elId);
         if (el) {
-            el.innerHTML = `<div style="padding:10px; background:${isError ? '#c6282840' : '#2e7d3240'}; border-radius:15px; margin-top:10px;">${msg}</div>`;
+            el.innerHTML = `<div class="status-msg ${isError ? 'status-error' : 'status-success'}">${msg}</div>`;
             setTimeout(() => el.innerHTML = '', 4000);
         }
     }
 
-    // Сохранить ник
     function saveNick() {
         const newNick = document.getElementById('nickInput').value.trim();
         if (newNick) {
@@ -154,7 +588,7 @@
         return localNick || (currentUser?.gameNick) || (currentUser?.username) || '';
     }
 
-    // ========== АВТОРИЗАЦИЯ ==========
+    // Auth
     async function doRegister() {
         const payload = {
             username: document.getElementById('regUsername').value,
@@ -164,8 +598,8 @@
         const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await res.json();
         if (res.ok) {
-            showMsg('regMsg', '✅ Регистрация успешна! Теперь войдите.', false);
-            showAuthForm('login');
+            showMsg('regMsg', '✅ Регистрация успешна! Войдите.', false);
+            switchAuth('login');
         } else {
             showMsg('regMsg', `❌ ${data.error}`, true);
         }
@@ -181,12 +615,14 @@
         if (res.ok) {
             currentUser = data.user;
             localStorage.setItem('user', JSON.stringify(currentUser));
-            document.getElementById('authBlock').style.display = 'none';
-            document.getElementById('profileBlock').style.display = 'block';
+            document.getElementById('authModal').style.display = 'none';
             document.getElementById('uploadBlock').style.display = 'block';
+            document.getElementById('showAuthBtn').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'inline-block';
+            document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
             document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username;
             if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block';
-            log(`✅ Вход выполнен: ${currentUser.username} (${currentUser.role})`);
+            log(`✅ Вход: ${currentUser.username} (${currentUser.role})`);
             loadLeaderboard();
             loadMyStats();
             if (currentUser.role === 'admin') loadAdminStats();
@@ -201,9 +637,19 @@
         location.reload();
     }
 
-    function showAuthForm(type) {
+    function showAuthModal() {
+        const modal = document.getElementById('authModal');
+        modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function switchAuth(type) {
         document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
         document.getElementById('registerForm').style.display = type === 'register' ? 'block' : 'none';
+    }
+
+    function toggleProfile() {
+        const dropdown = document.getElementById('profileDropdown');
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
     }
 
     function showTab(tab) {
@@ -215,58 +661,100 @@
         if (tab === 'admin' && currentUser?.role === 'admin') loadAdminStats();
     }
 
-    // ========== ЛИДЕРБОРД ==========
+    // Leaderboard
     async function loadLeaderboard() {
         try {
             const res = await fetch('/api/leaderboard');
             const data = await res.json();
             const container = document.getElementById('leaderboardList');
-            container.innerHTML = '<h4>🏆 ТОП ИГРОКОВ</h4>';
-            if (!data.length) { container.innerHTML += '<p>Нет данных</p>'; return; }
-            data.slice(0, 20).forEach((p, i) => {
+            container.innerHTML = '';
+            if (!data.length) {
+                container.innerHTML = '<div style="text-align:center; padding:40px;">🏆 Пока нет данных</div>';
+                return;
+            }
+            data.slice(0, 30).forEach((p, i) => {
+                const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
                 container.innerHTML += `
-                    <div class="stat-item" style="border-left-color: ${i===0?'gold':i===1?'silver':'#cd7f32'}">
-                        <b>${i+1}. ${p.game_nick || p.username}</b> (${p.username})<br>
-                        💀 ${p.kills} убийств | ⚡ ${p.damage?.toLocaleString()} урона
-                        ${p.video_link ? `<br>🎥 <a href="${p.video_link}" target="_blank">Видео</a>` : ''}
+                    <div class="leaderboard-card">
+                        <div class="leaderboard-rank ${rankClass}">#${i+1}</div>
+                        <div class="leaderboard-info">
+                            <div class="leaderboard-name">${p.game_nick || p.username}</div>
+                            <div class="leaderboard-stats">
+                                <span>💀 ${p.kills} убийств</span>
+                                <span>⚡ ${p.damage?.toLocaleString()} урона</span>
+                            </div>
+                        </div>
+                        ${p.video_link ? `<a href="${p.video_link}" target="_blank" style="color:#ffd966;">🎥</a>` : ''}
                     </div>
                 `;
             });
         } catch(e) { log('Leaderboard error: ' + e); }
     }
 
-    // ========== МОЯ СТАТИСТИКА ==========
+    // My Stats
     async function loadMyStats() {
         if (!currentUser) return;
         try {
             const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } });
             const stats = await res.json();
             const container = document.getElementById('myStatsList');
-            container.innerHTML = '<h4>📋 Твоя статистика</h4>';
-            if (!stats.length) { container.innerHTML += '<p>Нет данных. Загрузи скриншот!</p>'; return; }
-            for (let s of stats) {
+            container.innerHTML = '';
+            if (!stats.length) {
+                container.innerHTML = '<div style="text-align:center; padding:40px;">📭 Нет статистики. Загрузите скриншот!</div>';
+                return;
+            }
+            stats.forEach(s => {
                 container.innerHTML += `
-                    <div class="stat-item">
-                        <div><b>${new Date(s.date).toLocaleDateString()}</b> | Ник: ${s.game_nick || s.username}</div>
-                        <div>💀 ${s.kills} | 🎯 ${s.kill_percent || 0}% | 💥 HS ${s.hs_percent || 0}% | ⚡ ${s.damage?.toLocaleString()}</div>
-                        <div>🎥 ${s.video_link ? `<a href="${s.video_link}" target="_blank">Видео</a>` : '—'}</div>
-                        <div>${s.screenshot ? `<img src="${s.screenshot}" style="max-width:100px; border-radius:10px; cursor:pointer;" onclick="showFullImage('${s.screenshot}')">` : '—'}</div>
-                        <div>Статус: ${s.verified ? '✅ Подтверждена' : '⏳ Ожидает проверки'}</div>
-                        ${!s.verified ? `<button onclick="deleteMyStat(${s.id})" style="background:#c62828; margin-top:8px;">🗑️ Удалить</button>` : ''}
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-nick">${s.game_nick || s.username}</span>
+                            <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
+                        </div>
+                        <div class="stat-numbers">
+                            <div class="stat-number">
+                                <div class="stat-number-value">${s.kills}</div>
+                                <div class="stat-number-label">Убийства</div>
+                            </div>
+                            <div class="stat-number">
+                                <div class="stat-number-value">${s.kill_percent || 0}%</div>
+                                <div class="stat-number-label">% убийств</div>
+                            </div>
+                            <div class="stat-number">
+                                <div class="stat-number-value">${s.hs_percent || 0}%</div>
+                                <div class="stat-number-label">HS %</div>
+                            </div>
+                            <div class="stat-number">
+                                <div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div>
+                                <div class="stat-number-label">Урон</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <span class="stat-status ${s.verified ? 'status-verified' : 'status-pending'}">
+                                    ${s.verified ? '✅ Подтверждена' : '⏳ Ожидает проверки'}
+                                </span>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                ${s.video_link ? `<a href="${s.video_link}" target="_blank" style="color:#ffd966;">🎥 Видео</a>` : ''}
+                                ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
+                                ${!s.verified ? `<button onclick="deleteMyStat(${s.id})" style="background:#c62828; padding:5px 12px;">🗑️ Удалить</button>` : ''}
+                            </div>
+                        </div>
                     </div>
                 `;
-            }
+            });
         } catch(e) { log('MyStats error: ' + e); }
     }
 
     async function deleteMyStat(id) {
         if (!confirm('Удалить эту статистику?')) return;
-        const res = await fetch(`/api/stats/${id}`, { method: 'DELETE' });
-        if (res.ok) { loadMyStats(); loadLeaderboard(); showMsg('uploadMsg', '✅ Удалено', false); }
-        else showMsg('uploadMsg', '❌ Ошибка', true);
+        await fetch(`/api/stats/${id}`, { method: 'DELETE' });
+        loadMyStats();
+        loadLeaderboard();
+        showMsg('uploadMsg', '✅ Статистика удалена', false);
     }
 
-    // ========== АДМИН-ПАНЕЛЬ ==========
+    // Admin Panel
     async function loadAdminStats() {
         if (!currentUser || currentUser.role !== 'admin') return;
         try {
@@ -274,60 +762,61 @@
             const allStats = await res.json();
             const unverified = allStats.filter(s => !s.verified);
             const container = document.getElementById('adminList');
-            container.innerHTML = '<h4>🔧 Неподтверждённая статистика</h4>';
-            if (!unverified.length) { container.innerHTML += '<p>✅ Нет ожидающих</p>'; return; }
-            for (let s of unverified) {
+            container.innerHTML = '';
+            if (!unverified.length) {
+                container.innerHTML = '<div style="text-align:center; padding:40px;">✅ Нет неподтверждённой статистики</div>';
+                return;
+            }
+            unverified.forEach(s => {
                 container.innerHTML += `
-                    <div class="stat-item">
-                        <div><b>${s.game_nick || s.username}</b> (${s.username})</div>
-                        <div>💀 ${s.kills} | 🎯 ${s.kill_percent || 0}% | 💥 HS ${s.hs_percent || 0}% | ⚡ ${s.damage?.toLocaleString()}</div>
-                        <div>🎥 ${s.video_link ? `<a href="${s.video_link}" target="_blank">Видео</a>` : '—'}</div>
-                        <div>${s.screenshot ? `<img src="${s.screenshot}" style="max-width:100px; border-radius:10px; cursor:pointer;" onclick="showFullImage('${s.screenshot}')">` : '—'}</div>
-                        <div>
-                            <button onclick="verifyStat(${s.id})" style="background:#2e7d32;">✅ Подтвердить</button>
-                            <button onclick="deleteStat(${s.id})" style="background:#c62828;">🗑️ Отклонить</button>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-nick">${s.game_nick || s.username}</span>
+                            <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
+                        </div>
+                        <div class="stat-numbers">
+                            <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">Убийства</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">% убийств</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">HS %</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">Урон</div></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥 Видео</a>` : ''} ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}</div>
+                            <div>
+                                <button onclick="verifyStat(${s.id})" style="background:#2e7d32;">✅ Подтвердить</button>
+                                <button onclick="deleteStat(${s.id})" style="background:#c62828;">🗑️ Отклонить</button>
+                            </div>
                         </div>
                     </div>
                 `;
-            }
+            });
         } catch(e) { log('AdminStats error: ' + e); }
     }
 
     async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Удалено', false); }
-    function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:1000;cursor:pointer;'; m.innerHTML = `<img src="${src}" style="max-width:90%;max-height:90%;border-radius:20px;">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
+    function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НЕЙРОНКА ==========
+    // OCR
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
         if (!nickToFind) return null;
-        
         if (!ocrWorker) {
             log('Загрузка нейронки...');
             ocrWorker = await Tesseract.createWorker('rus+eng', 1);
-            await ocrWorker.setParameters({
-                tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_',
-                tessedit_pageseg_mode: '6'
-            });
+            await ocrWorker.setParameters({ tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_', tessedit_pageseg_mode: '6' });
             log('Нейронка готова');
         }
-        
         log('Распознавание...');
         const { data: { text } } = await ocrWorker.recognize(currentImageData);
-        log('Распознанный текст: ' + text.substring(0, 200));
         const lines = text.split('\n');
         for (let line of lines) {
             if (line.toLowerCase().includes(nickToFind.toLowerCase())) {
                 const numbers = line.match(/\d+/g);
                 if (numbers && numbers.length >= 4) {
-                    log(`Найдено в строке: ${line}`);
-                    return {
-                        kills: parseInt(numbers[0]),
-                        killPercent: parseFloat(numbers[1]),
-                        hsPercent: parseFloat(numbers[2]),
-                        damage: parseInt(numbers[3])
-                    };
+                    log(`Найдено: ${line}`);
+                    return { kills: parseInt(numbers[0]), killPercent: parseFloat(numbers[1]), hsPercent: parseFloat(numbers[2]), damage: parseInt(numbers[3]) };
                 }
             }
         }
@@ -340,10 +829,10 @@
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 currentImageData = ev.target.result;
-                document.getElementById('preview').innerHTML = `<img src="${currentImageData}" style="max-width:100%; max-height:200px; border-radius:15px; margin:10px 0;">`;
+                document.getElementById('preview').innerHTML = `<img src="${currentImageData}" style="max-width:100%; max-height:200px; border-radius:16px;">`;
                 const nick = getCurrentNick();
                 if (!nick) {
-                    document.getElementById('ocrResult').innerHTML = `⚠️ Сначала сохрани ник в профиле`;
+                    document.getElementById('ocrResult').innerHTML = `⚠️ Сначала сохраните ник в профиле`;
                     document.getElementById('ocrResult').style.display = 'block';
                     return;
                 }
@@ -354,7 +843,7 @@
                     document.getElementById('ocrResult').style.display = 'block';
                     document.getElementById('sendBtn').style.display = 'block';
                 } else {
-                    document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}" в таблице. Проверь ник в профиле.`;
+                    document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}" в таблице. Проверьте ник в профиле.`;
                     document.getElementById('ocrResult').style.display = 'block';
                     document.getElementById('sendBtn').style.display = 'none';
                     recognizedStats = null;
@@ -367,23 +856,18 @@
     async function sendStats() {
         if (!currentUser) { alert('Войдите'); return; }
         if (!recognizedStats) { alert('Сначала распознайте ник'); return; }
-        if (!currentImageData) { alert('Сначала загрузите скриншот'); return; }
-        
-        const compressed = await (async (base64) => {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    if (w > 800) { h = (h * 800) / w; w = 800; }
-                    canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', 0.6));
-                };
-                img.src = base64;
-            });
-        })(currentImageData);
-        
+        const compressed = await new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+                if (w > 800) { h = (h * 800) / w; w = 800; }
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', 0.6));
+            };
+            img.src = currentImageData;
+        });
         const payload = {
             username: currentUser.username,
             kills: recognizedStats.kills,
@@ -393,9 +877,7 @@
             videoLink: document.getElementById('videoLink').value,
             screenshot: compressed
         };
-        log('Отправка: ' + JSON.stringify(payload));
         const res = await fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        const result = await res.json();
         if (res.ok) {
             showMsg('uploadMsg', '✅ Статистика отправлена!', false);
             recognizedStats = null;
@@ -409,23 +891,25 @@
             if (currentUser.role === 'admin') loadAdminStats();
             loadLeaderboard();
         } else {
-            showMsg('uploadMsg', `❌ Ошибка: ${result.error || 'неизвестная'}`, true);
+            const err = await res.json();
+            showMsg('uploadMsg', `❌ Ошибка: ${err.error || 'неизвестная'}`, true);
         }
     }
 
-    // Загрузка сохранённого пользователя
-    const saved = localStorage.getItem('user');
-    if (saved) {
-        currentUser = JSON.parse(saved);
-        document.getElementById('authBlock').style.display = 'none';
-        document.getElementById('profileBlock').style.display = 'block';
+    // Init
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        document.getElementById('authModal').style.display = 'none';
         document.getElementById('uploadBlock').style.display = 'block';
+        document.getElementById('showAuthBtn').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'inline-block';
+        document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
         document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username;
         if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block';
         loadLeaderboard();
         loadMyStats();
         if (currentUser.role === 'admin') loadAdminStats();
-        log(`Загружен пользователь: ${currentUser.username} (${currentUser.role})`);
     } else {
         document.getElementById('currentNickDisplay').innerText = localNick;
         loadLeaderboard();
