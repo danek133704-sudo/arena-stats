@@ -18,7 +18,6 @@
             min-height: 100vh;
         }
 
-        /* Header */
         .header {
             background: rgba(10, 10, 10, 0.95);
             backdrop-filter: blur(12px);
@@ -104,7 +103,6 @@
             padding: 2rem 1.5rem;
         }
 
-        /* Cards */
         .card {
             background: rgba(17, 17, 17, 0.85);
             backdrop-filter: blur(4px);
@@ -112,14 +110,8 @@
             padding: 1.8rem;
             margin-bottom: 1.8rem;
             border: 1px solid rgba(255, 217, 102, 0.2);
-            transition: all 0.2s;
         }
 
-        .card:hover {
-            border-color: rgba(255, 217, 102, 0.5);
-        }
-
-        /* Auth Modal - Normal Design */
         .auth-modal {
             max-width: 480px;
             margin: 0 auto;
@@ -211,12 +203,6 @@
             border-radius: 20px;
             border: 1px solid #ffaa33;
             cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .preview-image:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 15px rgba(255, 170, 51, 0.3);
         }
 
         input {
@@ -229,13 +215,6 @@
             margin: 10px 0;
         }
 
-        input:focus {
-            outline: none;
-            border-color: #ffaa33;
-            box-shadow: 0 0 8px #ffaa33;
-        }
-
-        /* Tabs */
         .tabs {
             display: flex;
             gap: 12px;
@@ -259,33 +238,21 @@
             font-weight: bold;
         }
 
-        .tab:hover {
-            background: #ffaa3322;
-            color: #ffcc66;
-        }
-
         .tab-content {
             display: none;
-            animation: fadeIn 0.3s ease;
         }
 
         .tab-content.active {
             display: block;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 20px;
         }
 
-        .stat-card, .admin-card {
+        .admin-card {
             background: #0e0e12;
             border-radius: 20px;
             padding: 1.2rem;
@@ -293,10 +260,9 @@
             transition: all 0.2s;
         }
 
-        .stat-card:hover, .admin-card:hover {
+        .admin-card:hover {
             transform: translateY(-3px);
             background: #1a1a1a;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
         }
 
         .stat-header {
@@ -346,38 +312,12 @@
             color: #ffd966aa;
         }
 
-        .stat-status {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: bold;
-        }
-
-        .status-verified {
-            background: #2e7d3240;
-            color: #4caf50;
-            border: 1px solid #4caf50;
-        }
-
-        .status-pending {
-            background: #ff980040;
-            color: #ff9800;
-            border: 1px solid #ff9800;
-        }
-
         .screenshot-thumb {
             width: 50px;
             height: 50px;
             object-fit: cover;
             border-radius: 12px;
             cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .screenshot-thumb:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 8px #ffaa33;
         }
 
         .leaderboard-card {
@@ -388,12 +328,6 @@
             display: flex;
             align-items: center;
             gap: 16px;
-            transition: all 0.2s;
-        }
-
-        .leaderboard-card:hover {
-            background: #1a1a1a;
-            transform: translateX(5px);
         }
 
         .leaderboard-rank {
@@ -403,26 +337,9 @@
             text-align: center;
         }
 
-        .rank-1 { color: gold; text-shadow: 0 0 5px gold; }
+        .rank-1 { color: gold; }
         .rank-2 { color: silver; }
         .rank-3 { color: #cd7f32; }
-
-        .leaderboard-info {
-            flex: 1;
-        }
-
-        .leaderboard-name {
-            font-size: 1rem;
-            font-weight: bold;
-        }
-
-        .leaderboard-stats {
-            display: flex;
-            gap: 20px;
-            margin-top: 4px;
-            font-size: 0.75rem;
-            color: #ffd966aa;
-        }
 
         .profile-menu {
             position: relative;
@@ -439,7 +356,6 @@
             padding: 1rem;
             width: 280px;
             z-index: 200;
-            backdrop-filter: blur(8px);
         }
 
         .nick-edit {
@@ -451,23 +367,6 @@
         .nick-edit input {
             margin: 0;
             padding: 8px 12px;
-        }
-
-        .stats-summary {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #ffaa3350;
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .stats-summary-item {
-            background: #0a0a0a;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.7rem;
         }
 
         .modal {
@@ -509,28 +408,8 @@
             border: 1px solid #c62828;
         }
 
-        .debug-panel {
-            background: #0a0a0a;
-            padding: 12px;
-            border-radius: 16px;
-            font-family: monospace;
-            font-size: 11px;
-            color: #5f5;
-            max-height: 200px;
-            overflow: auto;
-            margin-top: 16px;
-        }
-
-        .refresh-btn {
-            background: #ffaa33;
-            color: #0a0a0a;
-            margin-bottom: 15px;
-            padding: 8px 20px;
-        }
-
         @media (max-width: 700px) {
             .stats-grid { grid-template-columns: 1fr; }
-            .leaderboard-card { flex-wrap: wrap; }
             .header-content { flex-direction: column; text-align: center; }
         }
     </style>
@@ -557,11 +436,6 @@
                         <div class="nick-edit">
                             <input type="text" id="nickInput" placeholder="Новый ник">
                             <button onclick="saveNick()">Сохранить</button>
-                        </div>
-                        <div class="stats-summary" id="userStatsSummary">
-                            <div class="stats-summary-item">💥 Макс урон: —</div>
-                            <div class="stats-summary-item">📊 Средний урон: —</div>
-                            <div class="stats-summary-item">🎯 Всего убийств: —</div>
                         </div>
                         <button onclick="logout()" class="btn-outline" style="margin-top: 12px; width: 100%;">🚪 Выйти</button>
                     </div>
@@ -597,16 +471,16 @@
 
     <!-- Upload Section -->
     <div id="uploadBlock" class="card" style="display: none;">
-        <h2 style="margin-bottom: 16px;">📸 Загрузить скриншот</h2>
+        <h2>📸 Загрузить скриншот</h2>
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-            <div style="font-size: 44px; margin-bottom: 8px;">📸</div>
-            <p>Нажми или перетащи скриншот с таблицей статистики</p>
+            <div style="font-size: 44px;">📸</div>
+            <p>Нажми или перетащи скриншот</p>
             <input type="file" id="fileInput" hidden accept="image/*">
         </div>
         <div id="preview" class="preview-container"></div>
-        <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео (YouTube/Twitch)">
+        <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео">
         <div id="ocrResult" style="background: #0a0a0a; padding: 12px; border-radius: 20px; margin: 12px 0; display: none;"></div>
-        <button id="sendBtn" style="display: none;" onclick="sendStats()">📤 Отправить статистику</button>
+        <button id="sendBtn" style="display: none;" onclick="sendStats()">📤 Отправить</button>
         <div id="uploadMsg"></div>
     </div>
 
@@ -628,9 +502,7 @@
         </div>
 
         <div id="adminTabContent" class="tab-content">
-            <button onclick="loadAdminStats()" class="refresh-btn" style="margin-bottom: 15px;">🔄 ОБНОВИТЬ АДМИН-ПАНЕЛЬ</button>
             <div id="adminList" class="stats-grid"></div>
-            <div id="adminDebug" class="debug-panel"></div>
         </div>
     </div>
 </div>
@@ -643,15 +515,6 @@
     let ocrWorker = null;
     let localNick = localStorage.getItem('arena_nick') || 'Flik_Homixide';
 
-    function log(msg) {
-        const debugDiv = document.getElementById('adminDebug');
-        if (debugDiv) {
-            debugDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-            debugDiv.scrollTop = debugDiv.scrollHeight;
-        }
-        console.log(msg);
-    }
-
     function showMsg(elId, msg, isError) {
         const el = document.getElementById(elId);
         if (el) {
@@ -662,7 +525,7 @@
 
     function saveNick() {
         const newNick = document.getElementById('nickInput').value.trim();
-        if (!newNick) { showMsg('uploadMsg', '❌ Введите ник', true); return; }
+        if (!newNick) return;
         localNick = newNick;
         localStorage.setItem('arena_nick', localNick);
         document.getElementById('currentNickDisplay').innerText = localNick;
@@ -700,7 +563,6 @@
             document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
             document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username;
             if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block';
-            log(`✅ Вход: ${currentUser.username} (${currentUser.role})`);
             loadLeaderboard();
             loadMyStats();
             loadAdminStats();
@@ -726,8 +588,6 @@
     function showTab(tab) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-        const targetTab = document.querySelector(`.tab[onclick="showTab('${tab}')"]`);
-        if (targetTab) targetTab.classList.add('active');
         document.getElementById(tab + 'Tab').classList.add('active');
         if (tab === 'leaderboard') loadLeaderboard();
         if (tab === 'mystats') loadMyStats();
@@ -740,29 +600,12 @@
             const data = await res.json();
             const container = document.getElementById('leaderboardList');
             container.innerHTML = '';
-            if (!data.length) {
-                container.innerHTML = '<div style="text-align:center; padding:40px;">🏆 Пока нет данных</div>';
-                return;
-            }
-            const searchTerm = document.getElementById('searchPlayer')?.value.toLowerCase() || '';
-            const filtered = data.filter(p => (p.game_nick || p.username).toLowerCase().includes(searchTerm));
-            filtered.slice(0, 30).forEach((p, i) => {
+            if (!data.length) { container.innerHTML = '<div style="text-align:center; padding:40px;">🏆 Пока нет данных</div>'; return; }
+            data.slice(0, 30).forEach((p, i) => {
                 const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
-                container.innerHTML += `
-                    <div class="leaderboard-card">
-                        <div class="leaderboard-rank ${rankClass}">#${i+1}</div>
-                        <div class="leaderboard-info">
-                            <div class="leaderboard-name">${escapeHtml(p.game_nick || p.username)}</div>
-                            <div class="leaderboard-stats">
-                                <span>💀 ${p.kills}</span>
-                                <span>⚡ ${p.damage?.toLocaleString()}</span>
-                            </div>
-                        </div>
-                        ${p.video_link ? `<a href="${p.video_link}" target="_blank" style="color:#ffd966;">🎥</a>` : ''}
-                    </div>
-                `;
+                container.innerHTML += `<div class="leaderboard-card"><div class="leaderboard-rank ${rankClass}">#${i+1}</div><div><div><b>${escapeHtml(p.game_nick || p.username)}</b></div><div>💀 ${p.kills} | ⚡ ${p.damage?.toLocaleString()}</div></div></div>`;
             });
-        } catch(e) { log('Leaderboard error: ' + e); }
+        } catch(e) { console.log(e); }
     }
 
     async function loadMyStats() {
@@ -772,80 +615,31 @@
             const stats = await res.json();
             const container = document.getElementById('myStatsList');
             container.innerHTML = '';
-            if (!stats.length) {
-                container.innerHTML = '<div style="text-align:center; padding:40px;">📭 Нет статистики. Загрузите скриншот!</div>';
-                return;
-            }
+            if (!stats.length) { container.innerHTML = '<div style="text-align:center; padding:40px;">📭 Нет статистики</div>'; return; }
             stats.forEach(s => {
-                container.innerHTML += `
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span>
-                            <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
-                        </div>
-                        <div class="stat-numbers">
-                            <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <span class="stat-status ${s.verified ? 'status-verified' : 'status-pending'}">${s.verified ? '✅ Подтверждена' : '⏳ Ожидает'}</span>
-                            <div style="display: flex; gap: 8px;">
-                                ${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : ''}
-                                ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
-                                ${!s.verified ? `<button onclick="deleteMyStat(${s.id})" style="background:#c62828; padding:4px 12px;">🗑️</button>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
+                container.innerHTML += `<div class="admin-card"><div class="stat-header"><span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span><span class="stat-date">${new Date(s.date).toLocaleDateString()}</span></div><div class="stat-numbers"><div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div><div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div><div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div><div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div></div><div><span class="stat-status" style="background:#2e7d3240;color:#4caf50;padding:4px 12px;border-radius:20px;">${s.verified ? '✅ Подтверждена' : '⏳ Ожидает'}</span></div></div>`;
             });
-        } catch(e) { log('MyStats error: ' + e); }
+        } catch(e) { console.log(e); }
     }
 
-    async function deleteMyStat(id) {
-        if (!confirm('Удалить эту статистику?')) return;
-        await fetch(`/api/stats/${id}`, { method: 'DELETE' });
-        loadMyStats();
-        loadLeaderboard();
-        showMsg('uploadMsg', '✅ Удалено', false);
-    }
-
-    // ADMIN PANEL - DIRECT DISPLAY
+    // ГЛАВНОЕ: АДМИН-ПАНЕЛЬ ВЫВОДИТСЯ ПРЯМО
     async function loadAdminStats() {
-        if (!currentUser) {
-            document.getElementById('adminList').innerHTML = '<div style="text-align:center; padding:40px;">🔐 Войдите в аккаунт</div>';
-            log('❌ Не залогинен');
-            return;
-        }
-        if (currentUser.role !== 'admin') {
+        if (!currentUser || currentUser.role !== 'admin') {
             document.getElementById('adminList').innerHTML = '<div style="text-align:center; padding:40px;">🔐 Требуются права администратора</div>';
-            log('❌ Не админ');
             return;
         }
-        
-        log('🔄 Загрузка админ-панели...');
         try {
             const res = await fetch('/api/stats/all');
             const allStats = await res.json();
-            log(`📊 Получено ${allStats.length} записей`);
-            
             const unverified = allStats.filter(s => !s.verified);
-            log(`⏳ Неподтверждённых: ${unverified.length}`);
-            
             const container = document.getElementById('adminList');
             container.innerHTML = '';
-            
             if (unverified.length === 0) {
                 container.innerHTML = '<div style="text-align:center; padding:40px;">✅ Нет неподтверждённой статистики</div>';
-                log('✅ Нет записей');
                 return;
             }
-            
-            // Прямое создание HTML без лишних проверок
-            let html = '';
             for (let s of unverified) {
-                html += `
+                container.innerHTML += `
                     <div class="admin-card">
                         <div class="stat-header">
                             <span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span>
@@ -859,84 +653,60 @@
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px;">
                             <div>
-                                ${s.video_link ? `<a href="${s.video_link}" target="_blank" style="color:#ffd966;">🎥 Видео</a>` : ''}
+                                ${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥 Видео</a>` : ''}
                                 ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
                             </div>
                             <div>
-                                <button onclick="verifyStat(${s.id})" style="background:#2e7d32;">✅ Подтвердить</button>
-                                <button onclick="deleteStat(${s.id})" style="background:#c62828;">🗑️ Отклонить</button>
+                                <button onclick="verifyStat(${s.id})" style="background:#2e7d32;">✅</button>
+                                <button onclick="deleteStat(${s.id})" style="background:#c62828;">🗑️</button>
                             </div>
                         </div>
                     </div>
                 `;
             }
-            container.innerHTML = html;
-            log(`✅ Отображено ${unverified.length} карточек`);
-        } catch(e) {
-            log(`❌ Ошибка: ${e.message}`);
-            document.getElementById('adminList').innerHTML = `<div style="text-align:center; padding:40px; color:#ff6b6b;">❌ Ошибка: ${e.message}</div>`;
-        }
+        } catch(e) { console.log(e); container.innerHTML = '<div style="text-align:center; padding:40px;">❌ Ошибка загрузки</div>'; }
     }
 
     async function verifyStat(id) {
-        log(`🔧 Подтверждение ${id}`);
         await fetch(`/api/stats/${id}/verify`, { method: 'PUT' });
         loadAdminStats();
         loadLeaderboard();
         loadMyStats();
         showMsg('uploadMsg', '✅ Подтверждено', false);
     }
-
     async function deleteStat(id) {
-        if (!confirm('Удалить эту статистику?')) return;
-        log(`🗑️ Удаление ${id}`);
+        if (!confirm('Удалить?')) return;
         await fetch(`/api/stats/${id}`, { method: 'DELETE' });
         loadAdminStats();
         loadLeaderboard();
         loadMyStats();
         showMsg('uploadMsg', '✅ Удалено', false);
     }
-
     function showFullImage(src) {
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `<img src="${src}">`;
-        modal.onclick = () => modal.remove();
-        document.body.appendChild(modal);
+        const m = document.createElement('div');
+        m.className = 'modal';
+        m.innerHTML = `<img src="${src}">`;
+        m.onclick = () => m.remove();
+        document.body.appendChild(m);
     }
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
 
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
-    }
-
+    // OCR
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
         if (!nickToFind) return null;
         if (!ocrWorker) {
-            log('🔄 Загрузка нейронки...');
             ocrWorker = await Tesseract.createWorker('rus+eng', 1);
-            await ocrWorker.setParameters({
-                tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_',
-                tessedit_pageseg_mode: '6'
-            });
-            log('✅ Нейронка готова');
+            await ocrWorker.setParameters({ tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_', tessedit_pageseg_mode: '6' });
         }
-        log('🔍 Распознавание...');
         const { data: { text } } = await ocrWorker.recognize(currentImageData);
         const lines = text.split('\n');
         for (let line of lines) {
             if (line.toLowerCase().includes(nickToFind.toLowerCase())) {
                 const numbers = line.match(/\d+/g);
                 if (numbers && numbers.length >= 4) {
-                    log(`✅ Найдено: ${line}`);
-                    return {
-                        kills: parseInt(numbers[0]),
-                        killPercent: parseFloat(numbers[1]),
-                        hsPercent: parseFloat(numbers[2]),
-                        damage: parseInt(numbers[3])
-                    };
+                    return { kills: parseInt(numbers[0]), killPercent: parseFloat(numbers[1]), hsPercent: parseFloat(numbers[2]), damage: parseInt(numbers[3]) };
                 }
             }
         }
@@ -951,11 +721,7 @@
                 currentImageData = ev.target.result;
                 document.getElementById('preview').innerHTML = `<img src="${currentImageData}" class="preview-image" onclick="showFullImage('${currentImageData}')">`;
                 const nick = getCurrentNick();
-                if (!nick) {
-                    document.getElementById('ocrResult').innerHTML = `⚠️ Сначала сохраните ник в профиле`;
-                    document.getElementById('ocrResult').style.display = 'block';
-                    return;
-                }
+                if (!nick) { document.getElementById('ocrResult').innerHTML = `⚠️ Сохраните ник`; document.getElementById('ocrResult').style.display = 'block'; return; }
                 const stats = await findMyStatsInScreenshot();
                 if (stats) {
                     recognizedStats = stats;
@@ -963,10 +729,9 @@
                     document.getElementById('ocrResult').style.display = 'block';
                     document.getElementById('sendBtn').style.display = 'block';
                 } else {
-                    document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}" в таблице. Проверьте ник в профиле.`;
+                    document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}"`;
                     document.getElementById('ocrResult').style.display = 'block';
                     document.getElementById('sendBtn').style.display = 'none';
-                    recognizedStats = null;
                 }
             };
             reader.readAsDataURL(f);
@@ -974,7 +739,7 @@
     };
 
     async function sendStats() {
-        if (!currentUser) { alert('Войдите в аккаунт'); return; }
+        if (!currentUser) { alert('Войдите'); return; }
         if (!recognizedStats) { alert('Сначала распознайте ник'); return; }
         const compressed = await new Promise(resolve => {
             const img = new Image();
@@ -988,18 +753,10 @@
             };
             img.src = currentImageData;
         });
-        const payload = {
-            username: currentUser.username,
-            kills: recognizedStats.kills,
-            killPercent: recognizedStats.killPercent,
-            hsPercent: recognizedStats.hsPercent,
-            damage: recognizedStats.damage,
-            videoLink: document.getElementById('videoLink').value,
-            screenshot: compressed
-        };
+        const payload = { username: currentUser.username, kills: recognizedStats.kills, killPercent: recognizedStats.killPercent, hsPercent: recognizedStats.hsPercent, damage: recognizedStats.damage, videoLink: document.getElementById('videoLink').value, screenshot: compressed };
         const res = await fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (res.ok) {
-            showMsg('uploadMsg', '✅ Статистика отправлена!', false);
+            showMsg('uploadMsg', '✅ Отправлено!', false);
             recognizedStats = null;
             document.getElementById('ocrResult').style.display = 'none';
             document.getElementById('sendBtn').style.display = 'none';
@@ -1012,7 +769,7 @@
             loadLeaderboard();
         } else {
             const err = await res.json();
-            showMsg('uploadMsg', `❌ Ошибка: ${err.error || 'неизвестная'}`, true);
+            showMsg('uploadMsg', `❌ ${err.error}`, true);
         }
     }
 
@@ -1026,7 +783,6 @@
         document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
         document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username;
         if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block';
-        log(`Загружен пользователь: ${currentUser.username} (${currentUser.role})`);
         loadLeaderboard();
         loadMyStats();
         loadAdminStats();
@@ -1034,7 +790,6 @@
         document.getElementById('currentNickDisplay').innerText = localNick;
         loadLeaderboard();
     }
-
     document.getElementById('searchPlayer')?.addEventListener('input', () => loadLeaderboard());
 </script>
 </body>
