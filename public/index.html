@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
         body { background: radial-gradient(circle at 20% 30%, #0d0d0d, #030303); color: #e0e0e0; min-height: 100vh; }
-        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 200, 100, 0.3); position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 15px; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 200, 100, 0.3); flex-wrap: wrap; gap: 15px; }
         .logo { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #ffcc66, #ffaa33); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .telegram-btn { background: #2c2c2c; padding: 8px 18px; border-radius: 40px; border: 1px solid #ffaa33; transition: 0.2s; }
         .telegram-btn a { color: #ffaa33; text-decoration: none; font-weight: 500; }
@@ -33,7 +33,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 14px 8px; border-bottom: 1px solid #ffaa3320; text-align: left; }
-        th { color: #ffcc66; }
+        th { color: #ffcc66; background: #1a1a1a; }
         tr:hover td { background: #ffaa3310; }
         .rank-1 { background: #ffaa3310; border-left: 4px solid gold; }
         .rank-2 { background: #c0c0c010; border-left: 4px solid silver; }
@@ -54,7 +54,7 @@
         .modal-card { background: #121212; border-radius: 32px; padding: 2rem; max-width: 420px; width: 90%; border: 1px solid #ffaa33; }
         .ocr-highlight { background: #ffaa3310; border-left: 3px solid #ffaa33; padding: 12px; border-radius: 20px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .send-btn { background: #ffaa33; color: #111; font-weight: bold; margin-top: 10px; width: 100%; padding: 12px; }
-        @media (max-width: 700px) { .navbar { flex-direction: column; text-align: center; } }
+        @media (max-width: 700px) { .navbar { flex-direction: column; text-align: center; } .tabs { justify-content: center; } }
     </style>
 </head>
 <body>
@@ -104,7 +104,7 @@
     </div>
 
     <div id="uploadPanel" class="card" style="display: none;">
-        <h2 style="margin-bottom: 16px;">📸 Загрузить скриншот</h2>
+        <h2>📸 Загрузить скриншот</h2>
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
             <div style="font-size: 44px;">📸</div>
             <p>Нажми или перетащи скриншот с таблицей статистики</p>
@@ -124,19 +124,19 @@
     </div>
 
     <div class="card">
-        <div class="tabs">
-            <div class="tab active" onclick="switchMain('leaderboard')">🏆 СПИСОК ЛИДЕРОВ</div>
-            <div class="tab" onclick="switchMain('mystats')">📋 МОЯ СТАТИСТИКА</div>
-            <div class="tab" id="adminTabBtn" style="display: none;" onclick="switchMain('admin')">🔧 АДМИН-ПАНЕЛЬ</div>
+        <div class="tabs" id="mainTabs">
+            <div class="tab active" data-tab="leaderboard">🏆 СПИСОК ЛИДЕРОВ</div>
+            <div class="tab" data-tab="mystats">📋 МОЯ СТАТИСТИКА</div>
+            <div class="tab" id="adminTabBtn" style="display: none;" data-tab="admin">🔧 АДМИН-ПАНЕЛЬ</div>
         </div>
 
         <div id="leaderboardPanel" class="tab-content active">
             <div class="search-box"><input type="text" id="searchPlayerInput" placeholder="🔍 Поиск игрока..."><button onclick="filterLeaderboard()">🔎</button><button onclick="resetLeaderboard()" class="btn-outline">❌</button></div>
-            <table id="leaderboardTable"><thead><th>#</th><th>Игрок</th><th>Убийства</th><th>Урон</th><th>Видео</th></thead><tbody id="leaderboardBody"><td colspan="5">Загрузка...<\/td><\/tbody><\/table>
+            <table><thead><th>#</th><th>Игрок</th><th>Убийства</th><th>Урон</th><th>Видео</th></thead><tbody id="leaderboardBody"><td colspan="5">Загрузка...<\/td><\/tbody><\/table>
         <\/div>
 
         <div id="mystatsPanel" class="tab-content">
-            <table id="myStatsTable"><thead><th>Дата</th><th>Ник</th><th>Убийства</th><th>%</th><th>HS%</th><th>Урон</th><th>Видео</th><th>Скрин</th><th>Статус</th><th>Действия</th></thead><tbody id="myStatsBody"><td colspan="10">Нет данных<\/td><\/tbody><\/table>
+            <table><thead><th>Дата</th><th>Ник</th><th>Убийства</th><th>%</th><th>HS%</th><th>Урон</th><th>Видео</th><th>Скрин</th><th>Статус</th><th>Действия</th></thead><tbody id="myStatsBody"><td colspan="10">Загрузка...<\/td><\/tbody><\/table>
         <\/div>
 
         <div id="adminPanel" class="tab-content"><div id="adminList"></div></div>
@@ -151,6 +151,25 @@
     let recognizedStats = null;
     let ocrWorker = null;
     let localNick = localStorage.getItem('arena_local_nick') || 'Flik_Homixide';
+
+    // ========== ВКЛАДКИ ==========
+    function switchToTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        const targetPanel = document.getElementById(tabId + 'Panel');
+        if (targetPanel) targetPanel.classList.add('active');
+        const targetTab = document.querySelector(`.tab[data-tab="${tabId}"]`);
+        if (targetTab) targetTab.classList.add('active');
+        if (tabId === 'mystats') loadMyStats();
+        if (tabId === 'admin' && currentUser?.role === 'admin') loadAdminStats();
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.getAttribute('data-tab');
+            if (tabId) switchToTab(tabId);
+        });
+    });
 
     async function compressImage(base64, maxWidth=800, quality=0.6) {
         return new Promise((resolve) => {
@@ -190,6 +209,7 @@
         return localNick || (currentUser?.gameNick) || (currentUser?.username) || '';
     }
 
+    // ========== АВТОРИЗАЦИЯ ==========
     async function register() {
         const payload = { username: document.getElementById('regUsername').value, password: document.getElementById('regPassword').value, gameNick: document.getElementById('regGameNick').value };
         const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -223,20 +243,14 @@
         document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
         document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
     }
-    function switchMain(tab) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-        if (tab === 'leaderboard') { document.getElementById('leaderboardPanel').classList.add('active'); document.querySelector('.tabs .tab').classList.add('active'); }
-        if (tab === 'mystats') { document.getElementById('mystatsPanel').classList.add('active'); document.querySelectorAll('.tabs .tab')[1].classList.add('active'); loadMyStats(); }
-        if (tab === 'admin') { document.getElementById('adminPanel').classList.add('active'); document.getElementById('adminTabBtn').classList.add('active'); if (currentUser?.role === 'admin') loadAdminStats(); }
-    }
 
+    // ========== ЛИДЕРБОРД ==========
     async function loadLeaderboard() {
         try {
             const res = await fetch('/api/leaderboard');
             allLeaderboardData = await res.json();
             renderLeaderboard(allLeaderboardData);
-        } catch(e) { console.error('Leaderboard error:', e); }
+        } catch(e) { console.error(e); }
     }
     function renderLeaderboard(data) {
         const tbody = document.getElementById('leaderboardBody');
@@ -256,6 +270,7 @@
     }
     function resetLeaderboard() { document.getElementById('searchPlayerInput').value = ''; renderLeaderboard(allLeaderboardData); }
 
+    // ========== МОЯ СТАТИСТИКА ==========
     async function loadMyStats() {
         if (!currentUser) return;
         try {
@@ -266,11 +281,24 @@
             tbody.innerHTML = '';
             if (!stats.length) { tbody.innerHTML = '<td colspan="10">Нет данных<\/td>'; return; }
             stats.forEach(s => {
-                tbody.innerHTML += `}。}。}。}。}。}。}。}。}。}。`;
+                tbody.innerHTML += `}
+                    <td>${new Date(s.date).toLocaleDateString()}<\/td>
+                    <td><strong>${s.game_nick}<\/strong><\/td>
+                    <td>${s.kills}<\/td>
+                    <td>${s.kill_percent || 0}%<\/td>
+                    <td>${s.hs_percent || 0}%<\/td>
+                    <td>${s.damage?.toLocaleString()}<\/td>
+                    <td>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}<\/td>
+                    <td>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}<\/td>
+                    <td>${s.verified ? '✅' : '⏳'}<\/td>
+                    <td>${!s.verified ? `<button class="delete-mine" onclick="deleteMyStat(${s.id})">🗑️</button>` : '—'}<\/td>
+                <\/tr>`.replace(/\n\s*/g, '');
             });
-        } catch(e) { console.error('MyStats error:', e); }
+        } catch(e) { console.error(e); }
     }
     async function deleteMyStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadMyStats(); loadLeaderboard(); showStatus('uploadStatus', '✅ Удалено', 'success'); }
+
+    // ========== АДМИН-ПАНЕЛЬ ==========
     async function loadAdminStats() {
         if (!currentUser || currentUser.role !== 'admin') return;
         try {
@@ -280,16 +308,26 @@
             const container = document.getElementById('adminList');
             if (!container) return;
             container.innerHTML = '';
-            if (!unverified.length) { container.innerHTML = '<div style="padding: 2rem;">✅ Нет ожидающих</div>'; return; }
+            if (!unverified.length) { container.innerHTML = '<div style="padding: 2rem; text-align: center;">✅ Нет ожидающих</div>'; return; }
             unverified.forEach(s => {
-                container.innerHTML += `<div class="stat-card"><div><b>${s.game_nick || s.username}</b> <small>(${s.username})</small></div><div>💀 ${s.kills}</div><div>🎯 ${s.kill_percent||0}%</div><div>💥 HS ${s.hs_percent||0}%</div><div>⚡ ${s.damage?.toLocaleString()}</div><div>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}</div><div>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}</div><div><button class="verify" onclick="verifyStat(${s.id})">✅</button><button class="delete" onclick="deleteStat(${s.id})">🗑️</button></div></div>`;
+                container.innerHTML += `<div class="stat-card">
+                    <div><b>${s.game_nick || s.username}</b> <small>(${s.username})</small></div>
+                    <div>💀 ${s.kills}</div>
+                    <div>🎯 ${s.kill_percent || 0}%</div>
+                    <div>💥 HS ${s.hs_percent || 0}%</div>
+                    <div>⚡ ${s.damage?.toLocaleString()}</div>
+                    <div>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}</div>
+                    <div>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}</div>
+                    <div><button class="verify" onclick="verifyStat(${s.id})">✅</button><button class="delete" onclick="deleteStat(${s.id})">🗑️</button></div>
+                </div>`;
             });
-        } catch(e) { console.error('AdminStats error:', e); }
+        } catch(e) { console.error(e); }
     }
     async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
+    // ========== НЕЙРОНКА ==========
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
