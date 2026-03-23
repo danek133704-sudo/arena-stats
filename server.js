@@ -118,7 +118,8 @@ app.post('/api/stats', async (req, res) => {
         };
         data.stats.push(newStat);
         saveData();
-        res.json({ success: true });
+        console.log(`✅ Статистика сохранена: ${username} - ${kills} убийств, ${damage} урона`);
+        res.json({ success: true, stat: newStat });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Ошибка' });
