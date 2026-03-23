@@ -7,28 +7,44 @@ import cors from 'cors';
 const { Pool } = pkg;
 
 const app = express();
+
+// ================= CONFIG =================
+
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL missing');
+  process.exit(1);
+}
+
+const PORT = process.env.PORT || 3000;
+const SECRET = 'supersecret';
+
+// ================= MIDDLEWARE =================
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
+// ================= DB =================
 
-const SECRET = 'supersecret';
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
 // ================= AUTH =================
 
 app.post('/api/register', async (req, res) => {
-  const { username, password, gameNick } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Нет данных' });
-  }
-
-  const hash = await bcrypt.hash(password, 10);
-
   try {
+    const { username, password, gameNick } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Нет данных' });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+
     const user = await pool.query(
       `INSERT INTO users (username, password, game_nick)
        VALUES ($1,$2,$3) RETURNING *`,
@@ -37,34 +53,40 @@ app.post('/api/register', async (req, res) => {
 
     res.json(user.rows[0]);
   } catch (e) {
+    console.error(e);
     res.status(400).json({ error: 'Пользователь уже существует' });
   }
 });
 
 app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
 
-  const user = await pool.query(
-    `SELECT * FROM users WHERE username=$1`,
-    [username]
-  );
+    const user = await pool.query(
+      `SELECT * FROM users WHERE username=$1`,
+      [username]
+    );
 
-  if (!user.rows.length) {
-    return res.status(400).json({ error: 'Нет пользователя' });
+    if (!user.rows.length) {
+      return res.status(400).json({ error: 'Нет пользователя' });
+    }
+
+    const valid = await bcrypt.compare(password, user.rows[0].password);
+    if (!valid) return res.status(400).json({ error: 'Неверный пароль' });
+
+    const token = jwt.sign(user.rows[0], SECRET);
+
+    res.json({
+      token,
+      user: user.rows[0]
+    });
+  } catch (e) {
+    console.error(e);
+    res.sendStatus(500);
   }
-
-  const valid = await bcrypt.compare(password, user.rows[0].password);
-  if (!valid) return res.status(400).json({ error: 'Неверный пароль' });
-
-  const token = jwt.sign(user.rows[0], SECRET);
-
-  res.json({
-    token,
-    user: user.rows[0]
-  });
 });
 
-// ================= MIDDLEWARE =================
+// ================= AUTH MIDDLEWARE =================
 
 function auth(req, res, next) {
   const token = req.headers.authorization;
@@ -81,15 +103,20 @@ function auth(req, res, next) {
 // ================= STATS =================
 
 app.post('/api/stats', auth, async (req, res) => {
-  const { kills, damage, videoLink, screenshot } = req.body;
+  try {
+    const { kills, damage, videoLink, screenshot } = req.body;
 
-  await pool.query(
-    `INSERT INTO stats (user_id, kills, damage, video_link, screenshot)
-     VALUES ($1,$2,$3,$4,$5)`,
-    [req.user.id, kills, damage, videoLink, screenshot]
-  );
+    await pool.query(
+      `INSERT INTO stats (user_id, kills, damage, video_link, screenshot)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [req.user.id, kills, damage, videoLink, screenshot]
+    );
 
-  res.json({ ok: true });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.sendStatus(500);
+  }
 });
 
 app.get('/api/stats/my', auth, async (req, res) => {
@@ -155,6 +182,6 @@ app.get('/api/leaderboard', async (req, res) => {
 
 // ================= START =================
 
-app.listen(3000, () => {
-  console.log('Server running on 3000');
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('✅ Server running on port', PORT);
 });
