@@ -21,6 +21,8 @@
         .upload-area:hover { background: #ffaa3310; border-color: #ffcc66; }
         .upload-area.dragover { background: #ffaa3320; border-color: #ffaa33; }
         input { width: 100%; padding: 12px; background: #2c2c2c; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 8px 0; }
+        .manual-input-row { display: flex; gap: 15px; flex-wrap: wrap; margin: 20px 0; }
+        .manual-input-row input { flex: 1; min-width: 100px; margin: 0; }
         .tabs { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; border-bottom: 1px solid #ffd96633; }
         .tab { padding: 8px 28px; border-radius: 40px; cursor: pointer; background: #2c2c2c; color: #aaa; transition: 0.2s; }
         .tab.active { background: #ffd966; color: #0a0a0a; font-weight: bold; }
@@ -58,17 +60,16 @@
         .auth-form.active { display: block; }
         .auth-form input { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 10px 0; }
         .preview-image { max-width: 100%; max-height: 300px; border-radius: 16px; cursor: crosshair; margin-top: 10px; border: 1px solid #ffd966; }
-        .preview-container { position: relative; display: inline-block; text-align: center; }
+        .preview-container { position: relative; display: inline-block; text-align: center; width: 100%; }
         .admin-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #ffd966; }
-        .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         .avg-stats { background: #0a0a0a; padding: 15px; border-radius: 20px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-around; }
         .avg-stat { text-align: center; }
         .avg-value { font-size: 1.8rem; font-weight: bold; color: #ffd966; }
         .avg-label { font-size: 0.8rem; color: #ffd966aa; }
-        .back-btn { background: #ffaa33; color: #0a0a0a; margin-bottom: 15px; }
+        .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         .clickable-nick { cursor: pointer; }
         .clickable-nick:hover { text-decoration: underline; color: #ffaa33; }
-        @media (max-width: 700px) { .stats-grid { grid-template-columns: 1fr; } .header-content { flex-direction: column; text-align: center; } }
+        @media (max-width: 700px) { .stats-grid { grid-template-columns: 1fr; } .header-content { flex-direction: column; text-align: center; } .manual-input-row { flex-direction: column; } }
     </style>
 </head>
 <body>
@@ -84,7 +85,7 @@
                 <div class="profile-menu" style="display: inline-block; margin-left: 12px;">
                     <button class="btn-outline" onclick="toggleProfile()">👤 Профиль</button>
                     <div id="profileDropdown" class="profile-dropdown" style="display: none;">
-                        <div><strong>Игровой ник:</strong> <span id="currentNickDisplay">Flik_Homixide</span></div>
+                        <div><strong>Игровой ник:</strong> <span id="currentNickDisplay">Flik_Cartel</span></div>
                         <div class="nick-edit"><input type="text" id="nickInput" placeholder="Новый ник"><button onclick="saveNick()">Сохранить</button></div>
                         <button onclick="logout()" class="btn-outline" style="margin-top: 10px; width: 100%;">🚪 Выйти</button>
                     </div>
@@ -102,7 +103,7 @@
                 <input type="text" id="loginUsername" placeholder="Логин"><input type="password" id="loginPassword" placeholder="Пароль"><button onclick="doLogin()">Войти</button><div id="loginMsg"></div>
             </div>
             <div id="registerForm" class="auth-form">
-                <input type="text" id="regUsername" placeholder="Логин"><input type="password" id="regPassword" placeholder="Пароль"><input type="text" id="regGameNick" placeholder="Ник в игре" value="Flik_Homixide"><button onclick="doRegister()">Зарегистрироваться</button><div id="regMsg"></div>
+                <input type="text" id="regUsername" placeholder="Логин"><input type="password" id="regPassword" placeholder="Пароль"><input type="text" id="regGameNick" placeholder="Ник в игре" value="Flik_Cartel"><button onclick="doRegister()">Зарегистрироваться</button><div id="regMsg"></div>
             </div>
         </div>
     </div>
@@ -111,23 +112,23 @@
         <h2>📸 Загрузить скриншот</h2>
         <div class="upload-area" id="uploadArea">
             <div style="font-size: 40px;">📸</div>
-            <p>Нажми или перетащи скриншот<br><small>💡 Кликни на любое число на скриншоте — оно автоматически вставится в поле</small></p>
+            <p>Нажми или перетащи скриншот<br><small>💡 Кликни на любое число на скриншоте → выбери поле → число вставится</small></p>
             <input type="file" id="fileInput" hidden accept="image/*">
         </div>
         <div id="preview" class="preview-container"></div>
         
         <div class="manual-section">
             <h3 style="margin-bottom: 15px;">✍️ РУЧНОЙ ВВОД (кликни на число на скриншоте)</h3>
-            <div class="manual-input-row" style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <input type="number" id="manualKills" placeholder="Убийства" style="flex:1">
-                <input type="number" id="manualKillPercent" placeholder="% убийств" style="flex:1">
-                <input type="number" id="manualHsPercent" placeholder="HS %" style="flex:1">
-                <input type="number" id="manualDamage" placeholder="Урон" style="flex:1">
+            <div class="manual-input-row">
+                <input type="number" id="manualKills" placeholder="Убийства">
+                <input type="number" id="manualKillPercent" placeholder="% убийств">
+                <input type="number" id="manualHsPercent" placeholder="HS %">
+                <input type="number" id="manualDamage" placeholder="Урон">
             </div>
         </div>
         
         <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео">
-        <button id="sendManualBtn" onclick="sendManualStats()">📤 Отправить вручную</button>
+        <button id="sendManualBtn" onclick="sendManualStats()">📤 Отправить статистику</button>
         <div id="uploadMsg"></div>
     </div>
 
@@ -168,7 +169,7 @@
     let currentUser = null;
     let currentImageData = null;
     let currentPreviewElement = null;
-    let localNick = localStorage.getItem('arena_nick') || 'Flik_Homixide';
+    let localNick = localStorage.getItem('arena_nick') || 'Flik_Cartel';
     let viewingProfile = false;
 
     function showMsg(elId, msg, isError) { 
@@ -376,7 +377,7 @@
             const avgRes = await fetch(`/api/stats/user/${encodeURIComponent(currentUser.username)}/average`);
             const avgData = await avgRes.json();
             const avgHtml = `
-                <div class="avg-stats" style="margin-bottom: 20px;">
+                <div class="avg-stats">
                     <div class="avg-stat"><div class="avg-value">${avgData.total_matches || 0}</div><div class="avg-label">Матчей</div></div>
                     <div class="avg-stat"><div class="avg-value">${Math.round(avgData.avg_kills || 0)}</div><div class="avg-label">Ср. убийств</div></div>
                     <div class="avg-stat"><div class="avg-value">${Math.round(avgData.avg_damage || 0).toLocaleString()}</div><div class="avg-label">Ср. урона</div></div>
@@ -462,79 +463,98 @@
     async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Удалено', false); }
 
-    // ========== РУЧНОЙ ВВОД С АВТО-ЗАПОЛНЕНИЕМ ==========
+    // ========== АВТО-ЗАПОЛНЕНИЕ ПРИ КЛИКЕ ==========
     function setupAutoFill() {
         const previewDiv = document.getElementById('preview');
         if (!previewDiv) return;
         
-        previewDiv.addEventListener('click', (e) => {
-            const target = e.target;
-            if (target.tagName === 'IMG') {
-                const rect = target.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const scaleX = target.naturalWidth / rect.width;
-                const scaleY = target.naturalHeight / rect.height;
-                const imgX = Math.floor(x * scaleX);
-                const imgY = Math.floor(y * scaleY);
-                
-                // Создаём canvas для получения цвета пикселя
-                const canvas = document.createElement('canvas');
-                canvas.width = target.naturalWidth;
-                canvas.height = target.naturalHeight;
-                const ctx = canvas.getContext('2d');
-                const img = new Image();
-                img.onload = () => {
-                    ctx.drawImage(img, 0, 0);
-                    const pixel = ctx.getImageData(imgX, imgY, 1, 1).data;
-                    const brightness = (pixel[0] + pixel[1] + pixel[2]) / 3;
-                    
-                    // Показываем подсказку
-                    showMsg('uploadMsg', `Кликните на число, которое хотите вставить`, false);
-                    
-                    // Ждём следующий клик на скриншоте
-                    const onImageClick = (event) => {
-                        const rect2 = target.getBoundingClientRect();
-                        const x2 = event.clientX - rect2.left;
-                        const y2 = event.clientY - rect2.top;
-                        const imgX2 = Math.floor(x2 * scaleX);
-                        const imgY2 = Math.floor(y2 * scaleY);
-                        
-                        // Создаём временный canvas для распознавания области
-                        const tempCanvas = document.createElement('canvas');
-                        tempCanvas.width = 100;
-                        tempCanvas.height = 50;
-                        const tempCtx = tempCanvas.getContext('2d');
-                        tempCtx.drawImage(target, imgX2 - 20, imgY2 - 10, 60, 30, 0, 0, 100, 50);
-                        
-                        // Распознаём число
-                        Tesseract.recognize(tempCanvas.toDataURL(), 'eng', {
-                            tessedit_char_whitelist: '0123456789',
-                            tessedit_pageseg_mode: '7'
-                        }).then(({ data: { text } }) => {
-                            const number = parseInt(text.replace(/[^0-9]/g, ''));
-                            if (!isNaN(number) && number > 0) {
-                                // Определяем, в какое поле вставить
-                                const activeField = document.activeElement;
-                                if (activeField && activeField.id) {
-                                    document.getElementById(activeField.id).value = number;
-                                    showMsg('uploadMsg', `✅ Вставлено: ${number}`, false);
-                                } else {
-                                    // Если не выбрано поле, спрашиваем
-                                    const field = prompt(`Вставлено число ${number}. Выберите поле:\n1 - Убийства\n2 - % убийств\n3 - HS%\n4 - Урон`, '1');
-                                    if (field === '1') document.getElementById('manualKills').value = number;
-                                    else if (field === '2') document.getElementById('manualKillPercent').value = number;
-                                    else if (field === '3') document.getElementById('manualHsPercent').value = number;
-                                    else if (field === '4') document.getElementById('manualDamage').value = number;
-                                }
-                            }
+        // Удаляем старый обработчик если есть
+        const oldImg = previewDiv.querySelector('img');
+        if (oldImg) {
+            oldImg.removeEventListener('click', handleImageClick);
+        }
+        
+        // Добавляем новый
+        const img = previewDiv.querySelector('img');
+        if (img) {
+            img.style.cursor = 'crosshair';
+            img.addEventListener('click', handleImageClick);
+        }
+    }
+    
+    let pendingNumber = null;
+    
+    function handleImageClick(e) {
+        const img = e.target;
+        const rect = img.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const scaleX = img.naturalWidth / rect.width;
+        const scaleY = img.naturalHeight / rect.height;
+        const imgX = Math.floor(x * scaleX);
+        const imgY = Math.floor(y * scaleY);
+        
+        // Создаём canvas для распознавания области вокруг клика
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const cropSize = 80;
+        canvas.width = cropSize;
+        canvas.height = cropSize;
+        
+        // Копируем область вокруг клика
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = img.naturalWidth;
+        tempCanvas.height = img.naturalHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(img, 0, 0);
+        
+        const cropX = Math.max(0, Math.min(img.naturalWidth - cropSize, imgX - cropSize/2));
+        const cropY = Math.max(0, Math.min(img.naturalHeight - cropSize, imgY - cropSize/2));
+        const imageData = tempCtx.getImageData(cropX, cropY, cropSize, cropSize);
+        canvas.getContext('2d').putImageData(imageData, 0, 0);
+        
+        showMsg('uploadMsg', '🔍 Распознаю число...', false);
+        
+        Tesseract.recognize(canvas.toDataURL(), 'eng', {
+            tessedit_char_whitelist: '0123456789',
+            tessedit_pageseg_mode: '7'
+        }).then(({ data: { text } }) => {
+            const number = parseInt(text.replace(/[^0-9]/g, ''));
+            if (!isNaN(number) && number > 0) {
+                pendingNumber = number;
+                showMsg('uploadMsg', `✅ Распознано: ${number}. Выберите поле:`, false);
+                // Подсвечиваем поля
+                const fields = ['manualKills', 'manualKillPercent', 'manualHsPercent', 'manualDamage'];
+                fields.forEach(id => {
+                    const field = document.getElementById(id);
+                    field.style.border = '2px solid #ffaa33';
+                    field.style.transition = '0.2s';
+                    const clickHandler = () => {
+                        field.value = pendingNumber;
+                        field.style.border = '';
+                        showMsg('uploadMsg', `✅ Вставлено ${pendingNumber} в ${field.placeholder}`, false);
+                        pendingNumber = null;
+                        fields.forEach(f => {
+                            document.getElementById(f).removeEventListener('click', clickHandler);
+                            document.getElementById(f).style.border = '';
                         });
-                        target.removeEventListener('click', onImageClick);
                     };
-                    target.addEventListener('click', onImageClick);
-                };
-                img.src = target.src;
+                    field.addEventListener('click', clickHandler, { once: true });
+                });
+                setTimeout(() => {
+                    if (pendingNumber !== null) {
+                        showMsg('uploadMsg', `⏰ Время вышло. Кликни на число заново.`, false);
+                        pendingNumber = null;
+                        fields.forEach(id => {
+                            document.getElementById(id).style.border = '';
+                        });
+                    }
+                }, 10000);
+            } else {
+                showMsg('uploadMsg', `❌ Не удалось распознать число. Попробуй ещё раз.`, true);
             }
+        }).catch(err => {
+            showMsg('uploadMsg', `❌ Ошибка распознавания`, true);
         });
     }
 
@@ -602,7 +622,7 @@
         const reader = new FileReader();
         reader.onload = async (ev) => {
             currentImageData = ev.target.result;
-            document.getElementById('preview').innerHTML = `<img src="${currentImageData}" class="preview-image" onclick="showFullImage('${currentImageData}')" style="cursor: crosshair;">`;
+            document.getElementById('preview').innerHTML = `<img src="${currentImageData}" class="preview-image" style="max-width:100%; max-height:300px; border-radius:16px; border:1px solid #ffd966; cursor: crosshair;">`;
             setupAutoFill();
             showMsg('uploadMsg', '✅ Скриншот загружен. Кликни на число, чтобы вставить в поле', false);
         };
