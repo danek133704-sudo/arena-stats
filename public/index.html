@@ -5,426 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arena Stats</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, #0a0a0a 0%, #141414 100%);
-            color: #e0e0e0;
-            min-height: 100vh;
-        }
-
-        .header {
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(12px);
-            padding: 1rem 2rem;
-            border-bottom: 1px solid rgba(255, 217, 102, 0.3);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .logo h1 {
-            font-size: 1.8rem;
-            background: linear-gradient(135deg, #ffd966, #ffaa33);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .logo p {
-            font-size: 0.7rem;
-            color: #ffd966aa;
-        }
-
-        .telegram-link {
-            background: #1a1a1a;
-            padding: 6px 18px;
-            border-radius: 40px;
-            border: 1px solid #ffaa33;
-            transition: all 0.2s;
-        }
-
-        .telegram-link a {
-            color: #ffaa33;
-            text-decoration: none;
-        }
-
-        .telegram-link:hover {
-            background: #ffaa33;
-        }
-        .telegram-link:hover a {
-            color: #0a0a0a;
-        }
-
-        button {
-            background: linear-gradient(135deg, #ffd966, #ffaa33);
-            border: none;
-            padding: 8px 22px;
-            border-radius: 40px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #111;
-        }
-
-        button:hover {
-            transform: scale(0.97);
-            box-shadow: 0 0 12px rgba(255, 200, 100, 0.5);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #ffaa33;
-            color: #ffaa33;
-        }
-
-        .btn-outline:hover {
-            background: #ffaa3310;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem 1.5rem;
-        }
-
-        .card {
-            background: rgba(17, 17, 17, 0.85);
-            backdrop-filter: blur(4px);
-            border-radius: 28px;
-            padding: 1.8rem;
-            margin-bottom: 1.8rem;
-            border: 1px solid rgba(255, 217, 102, 0.2);
-        }
-
-        .auth-modal {
-            max-width: 480px;
-            margin: 0 auto;
-            background: #1a1a1a;
-            border-radius: 32px;
-            padding: 2rem;
-            border: 1px solid #ffaa33;
-        }
-
-        .auth-tabs {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-
-        .auth-tab {
-            padding: 10px 32px;
-            border-radius: 40px;
-            cursor: pointer;
-            background: #2c2c2c;
-            color: #aaa;
-            transition: all 0.2s;
-            font-size: 1rem;
-            font-weight: 500;
-        }
-
-        .auth-tab.active {
-            background: #ffaa33;
-            color: #0a0a0a;
-            font-weight: bold;
-        }
-
-        .auth-form {
-            display: none;
-        }
-
-        .auth-form.active {
-            display: block;
-        }
-
-        .auth-form input {
-            width: 100%;
-            padding: 14px 18px;
-            background: #0a0a0a;
-            border: 1px solid #ffaa3350;
-            border-radius: 40px;
-            color: #ffdd99;
-            margin: 12px 0;
-            font-size: 1rem;
-        }
-
-        .auth-form input:focus {
-            outline: none;
-            border-color: #ffaa33;
-            box-shadow: 0 0 8px #ffaa33;
-        }
-
-        .auth-form button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 16px;
-            font-size: 1rem;
-        }
-
-        .upload-area {
-            border: 2px dashed #ffaa33;
-            border-radius: 24px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #0a0a0a;
-        }
-
-        .upload-area:hover {
-            background: #ffaa3310;
-            border-color: #ffcc66;
-        }
-
-        .preview-container {
-            margin-top: 1rem;
-            text-align: center;
-        }
-
-        .preview-image {
-            max-width: 100%;
-            max-height: 250px;
-            border-radius: 20px;
-            border: 1px solid #ffaa33;
-            cursor: pointer;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px 18px;
-            background: #1e1e1e;
-            border: 1px solid #ffaa3350;
-            border-radius: 40px;
-            color: #ffdd99;
-            margin: 10px 0;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            border-bottom: 1px solid #ffaa3350;
-            flex-wrap: wrap;
-        }
-
-        .tab {
-            padding: 8px 28px;
-            border-radius: 40px;
-            cursor: pointer;
-            background: #1a1a1a;
-            color: #aaa;
-            transition: all 0.2s;
-        }
-
-        .tab.active {
-            background: #ffaa33;
-            color: #0a0a0a;
-            font-weight: bold;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 20px;
-        }
-
-        .admin-card {
-            background: #0e0e12;
-            border-radius: 20px;
-            padding: 1.2rem;
-            border-left: 4px solid #ffaa33;
-            transition: all 0.2s;
-        }
-
-        .admin-card:hover {
-            transform: translateY(-3px);
-            background: #1a1a1a;
-        }
-
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #ffaa3350;
-        }
-
-        .stat-nick {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #ffd966;
-        }
-
-        .stat-date {
-            font-size: 0.7rem;
-            color: #ffd966aa;
-        }
-
-        .stat-numbers {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin: 12px 0;
-        }
-
-        .stat-number {
-            background: #1a1a1a;
-            padding: 8px 12px;
-            border-radius: 16px;
-            text-align: center;
-            flex: 1;
-            min-width: 70px;
-        }
-
-        .stat-number-value {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #ffd966;
-        }
-
-        .stat-number-label {
-            font-size: 0.7rem;
-            color: #ffd966aa;
-        }
-
-        .screenshot-thumb {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 12px;
-            cursor: pointer;
-        }
-
-        .leaderboard-card {
-            background: #0e0e12;
-            border-radius: 16px;
-            padding: 14px 18px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .leaderboard-rank {
-            font-size: 1.5rem;
-            font-weight: bold;
-            width: 55px;
-            text-align: center;
-        }
-
-        .rank-1 { color: gold; }
-        .rank-2 { color: silver; }
-        .rank-3 { color: #cd7f32; }
-
-        .profile-menu {
-            position: relative;
-            display: inline-block;
-        }
-
-        .profile-dropdown {
-            position: absolute;
-            right: 0;
-            top: 45px;
-            background: #1a1a1a;
-            border: 1px solid #ffaa33;
-            border-radius: 20px;
-            padding: 1rem;
-            width: 280px;
-            z-index: 200;
-        }
-
-        .nick-edit {
-            display: flex;
-            gap: 8px;
-            margin: 12px 0;
-        }
-
-        .nick-edit input {
-            margin: 0;
-            padding: 8px 12px;
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            cursor: pointer;
-        }
-
-        .modal img {
-            max-width: 90%;
-            max-height: 90%;
-            border-radius: 16px;
-        }
-
-        .status-msg {
-            padding: 10px;
-            border-radius: 40px;
-            margin-top: 12px;
-            text-align: center;
-        }
-
-        .success {
-            background: #2e7d3240;
-            color: #4caf50;
-            border: 1px solid #4caf50;
-        }
-
-        .error {
-            background: #c6282840;
-            color: #ff6b6b;
-            border: 1px solid #c62828;
-        }
-
-        @media (max-width: 700px) {
-            .stats-grid { grid-template-columns: 1fr; }
-            .header-content { flex-direction: column; text-align: center; }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: #0a0a0a; color: #ffd966; min-height: 100vh; }
+        .header { background: #1a1a1a; padding: 1rem 2rem; border-bottom: 1px solid #ffd966; position: sticky; top: 0; z-index: 100; }
+        .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        .logo h1 { font-size: 1.8rem; background: linear-gradient(135deg, #ffd966, #ffaa33); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .telegram-link { background: #2c2c2c; padding: 6px 18px; border-radius: 40px; border: 1px solid #ffd966; }
+        .telegram-link a { color: #ffd966; text-decoration: none; }
+        button { background: #ffd966; border: none; padding: 8px 22px; border-radius: 40px; font-weight: bold; cursor: pointer; color: #0a0a0a; transition: 0.2s; }
+        button:hover { transform: scale(0.97); background: #ffaa33; }
+        .btn-outline { background: transparent; border: 1px solid #ffd966; color: #ffd966; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .card { background: #1a1a1a; border-radius: 24px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #ffd96633; }
+        .upload-area { border: 2px dashed #ffd966; border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; background: #0a0a0a; }
+        input { width: 100%; padding: 12px; background: #2c2c2c; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 8px 0; }
+        .tabs { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; border-bottom: 1px solid #ffd96633; }
+        .tab { padding: 8px 28px; border-radius: 40px; cursor: pointer; background: #2c2c2c; color: #aaa; transition: 0.2s; }
+        .tab.active { background: #ffd966; color: #0a0a0a; font-weight: bold; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+        .admin-card { background: #0a0a0a; border-radius: 20px; padding: 1rem; border-left: 4px solid #ffd966; transition: 0.2s; }
+        .admin-card:hover { background: #2c2c2c; transform: translateX(5px); }
+        .stat-header { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #ffd96633; }
+        .stat-nick { font-size: 1.1rem; font-weight: bold; color: #ffd966; }
+        .stat-date { font-size: 0.7rem; color: #ffd966aa; }
+        .stat-numbers { display: flex; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
+        .stat-number { background: #1a1a1a; padding: 8px 12px; border-radius: 16px; text-align: center; flex: 1; min-width: 70px; }
+        .stat-number-value { font-size: 1.3rem; font-weight: bold; color: #ffd966; }
+        .stat-number-label { font-size: 0.7rem; color: #ffd966aa; }
+        .screenshot-thumb { width: 45px; height: 45px; border-radius: 10px; cursor: pointer; object-fit: cover; }
+        .leaderboard-card { background: #0a0a0a; border-radius: 16px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+        .leaderboard-rank { font-size: 1.4rem; font-weight: bold; width: 45px; text-align: center; }
+        .rank-1 { color: gold; } .rank-2 { color: silver; } .rank-3 { color: #cd7f32; }
+        .profile-menu { position: relative; display: inline-block; }
+        .profile-dropdown { position: absolute; right: 0; top: 45px; background: #1a1a1a; border: 1px solid #ffd966; border-radius: 20px; padding: 1rem; width: 260px; z-index: 200; }
+        .nick-edit { display: flex; gap: 8px; margin: 10px 0; }
+        .nick-edit input { margin: 0; padding: 6px 10px; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; cursor: pointer; }
+        .modal img { max-width: 90%; max-height: 90%; border-radius: 16px; }
+        .status-msg { padding: 8px; border-radius: 40px; margin-top: 10px; text-align: center; }
+        .success { background: #2e7d3240; color: #4caf50; border: 1px solid #4caf50; }
+        .error { background: #c6282840; color: #ff6b6b; border: 1px solid #c62828; }
+        .auth-modal { max-width: 450px; margin: 0 auto; text-align: center; background: #1a1a1a; border-radius: 28px; padding: 2rem; border: 1px solid #ffd966; }
+        .auth-tabs { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
+        .auth-tab { padding: 8px 32px; border-radius: 40px; cursor: pointer; background: #2c2c2c; color: #aaa; }
+        .auth-tab.active { background: #ffd966; color: #0a0a0a; font-weight: bold; }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+        .auth-form input { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 10px 0; }
+        .preview-image { max-width: 100%; max-height: 200px; border-radius: 16px; cursor: pointer; margin-top: 10px; }
+        @media (max-width: 700px) { .stats-grid { grid-template-columns: 1fr; } .header-content { flex-direction: column; text-align: center; } }
     </style>
 </head>
 <body>
 
 <div class="header">
     <div class="header-content">
-        <div class="logo">
-            <h1>⚔️ ARENA STATS</h1>
-            <p>Трекер статистики | Общий лидерборд</p>
-        </div>
-        <div class="telegram-link">
-            <a href="https://t.me/flikfak" target="_blank">🤝 @flikfak — сотрудничество</a>
-        </div>
+        <div class="logo"><h1>⚔️ ARENA STATS</h1><p>Трекер статистики | Общий лидерборд</p></div>
+        <div class="telegram-link"><a href="https://t.me/flikfak" target="_blank">🤝 @flikfak — сотрудничество</a></div>
         <div id="authArea">
             <button id="showAuthBtn" onclick="showAuthModal()">🔐 Вход / Регистрация</button>
             <div id="userInfo" style="display: none;">
@@ -433,11 +72,8 @@
                     <button class="btn-outline" onclick="toggleProfile()">👤 Профиль</button>
                     <div id="profileDropdown" class="profile-dropdown" style="display: none;">
                         <div><strong>Игровой ник:</strong> <span id="currentNickDisplay">Flik_Homixide</span></div>
-                        <div class="nick-edit">
-                            <input type="text" id="nickInput" placeholder="Новый ник">
-                            <button onclick="saveNick()">Сохранить</button>
-                        </div>
-                        <button onclick="logout()" class="btn-outline" style="margin-top: 12px; width: 100%;">🚪 Выйти</button>
+                        <div class="nick-edit"><input type="text" id="nickInput" placeholder="Новый ник"><button onclick="saveNick()">Сохранить</button></div>
+                        <button onclick="logout()" class="btn-outline" style="margin-top: 10px; width: 100%;">🚪 Выйти</button>
                     </div>
                 </div>
             </div>
@@ -446,107 +82,57 @@
 </div>
 
 <div class="container">
-    <!-- Auth Modal -->
     <div id="authModal" class="card" style="display: none;">
         <div class="auth-modal">
-            <div class="auth-tabs">
-                <div class="auth-tab active" onclick="switchAuth('login')">Вход</div>
-                <div class="auth-tab" onclick="switchAuth('register')">Регистрация</div>
-            </div>
+            <div class="auth-tabs"><div class="auth-tab active" onclick="switchAuth('login')">Вход</div><div class="auth-tab" onclick="switchAuth('register')">Регистрация</div></div>
             <div id="loginForm" class="auth-form active">
-                <input type="text" id="loginUsername" placeholder="Логин">
-                <input type="password" id="loginPassword" placeholder="Пароль">
-                <button onclick="doLogin()">Войти</button>
-                <div id="loginMsg"></div>
+                <input type="text" id="loginUsername" placeholder="Логин"><input type="password" id="loginPassword" placeholder="Пароль"><button onclick="doLogin()">Войти</button><div id="loginMsg"></div>
             </div>
             <div id="registerForm" class="auth-form">
-                <input type="text" id="regUsername" placeholder="Логин">
-                <input type="password" id="regPassword" placeholder="Пароль">
-                <input type="text" id="regGameNick" placeholder="Ник в игре" value="Flik_Homixide">
-                <button onclick="doRegister()">Зарегистрироваться</button>
-                <div id="regMsg"></div>
+                <input type="text" id="regUsername" placeholder="Логин"><input type="password" id="regPassword" placeholder="Пароль"><input type="text" id="regGameNick" placeholder="Ник в игре" value="Flik_Homixide"><button onclick="doRegister()">Зарегистрироваться</button><div id="regMsg"></div>
             </div>
         </div>
     </div>
 
-    <!-- Upload Section -->
     <div id="uploadBlock" class="card" style="display: none;">
         <h2>📸 Загрузить скриншот</h2>
-        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-            <div style="font-size: 44px;">📸</div>
-            <p>Нажми или перетащи скриншот</p>
-            <input type="file" id="fileInput" hidden accept="image/*">
-        </div>
-        <div id="preview" class="preview-container"></div>
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()"><div style="font-size: 40px;">📸</div><p>Нажми или перетащи скриншот</p><input type="file" id="fileInput" hidden accept="image/*"></div>
+        <div id="preview" style="text-align: center;"></div>
         <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео">
         <div id="ocrResult" style="background: #0a0a0a; padding: 12px; border-radius: 20px; margin: 12px 0; display: none;"></div>
         <button id="sendBtn" style="display: none;" onclick="sendStats()">📤 Отправить</button>
         <div id="uploadMsg"></div>
     </div>
 
-    <!-- Main Tabs -->
     <div class="card">
         <div class="tabs">
             <div class="tab active" onclick="showTab('leaderboard')">🏆 ЛИДЕРБОРД</div>
             <div class="tab" onclick="showTab('mystats')">📊 МОЯ СТАТИСТИКА</div>
             <div class="tab" id="adminTab" style="display: none;" onclick="showTab('admin')">🔧 АДМИН-ПАНЕЛЬ</div>
         </div>
-
-        <div id="leaderboardTab" class="tab-content active">
-            <input type="text" id="searchPlayer" placeholder="🔍 Поиск игрока..." style="margin-bottom: 20px;">
-            <div id="leaderboardList"></div>
-        </div>
-
-        <div id="mystatsTab" class="tab-content">
-            <div id="myStatsList"></div>
-        </div>
-
-        <div id="adminTabContent" class="tab-content">
-            <div id="adminList" class="stats-grid"></div>
-        </div>
+        <div id="leaderboardTab" class="tab-content active"><input type="text" id="searchPlayer" placeholder="🔍 Поиск игрока..." style="margin-bottom: 15px;"><div id="leaderboardList"></div></div>
+        <div id="mystatsTab" class="tab-content"><div id="myStatsList"></div></div>
+        <div id="adminTabContent" class="tab-content"><div id="adminList" class="stats-grid"></div></div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
-    let currentUser = null;
-    let currentImageData = null;
-    let recognizedStats = null;
-    let ocrWorker = null;
+    let currentUser = null, currentImageData = null, recognizedStats = null, ocrWorker = null;
     let localNick = localStorage.getItem('arena_nick') || 'Flik_Homixide';
 
-    function showMsg(elId, msg, isError) {
-        const el = document.getElementById(elId);
-        if (el) {
-            el.innerHTML = `<div class="status-msg ${isError ? 'error' : 'success'}">${msg}</div>`;
-            setTimeout(() => el.innerHTML = '', 4000);
-        }
-    }
-
-    function saveNick() {
-        const newNick = document.getElementById('nickInput').value.trim();
-        if (!newNick) return;
-        localNick = newNick;
-        localStorage.setItem('arena_nick', localNick);
-        document.getElementById('currentNickDisplay').innerText = localNick;
-        document.getElementById('nickInput').value = '';
-        showMsg('uploadMsg', `✅ Ник сохранён: ${localNick}`, false);
-    }
-
-    function getCurrentNick() {
-        return localNick || (currentUser?.gameNick) || (currentUser?.username) || '';
-    }
+    function showMsg(elId, msg, isError) { const el = document.getElementById(elId); if (el) { el.innerHTML = `<div class="status-msg ${isError ? 'error' : 'success'}">${msg}</div>`; setTimeout(() => el.innerHTML = '', 4000); } }
+    function saveNick() { const newNick = document.getElementById('nickInput').value.trim(); if (!newNick) return; localNick = newNick; localStorage.setItem('arena_nick', localNick); document.getElementById('currentNickDisplay').innerText = localNick; showMsg('uploadMsg', `✅ Ник сохранён: ${localNick}`, false); }
+    function getCurrentNick() { return localNick || (currentUser?.gameNick) || (currentUser?.username) || ''; }
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
+    function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
     async function doRegister() {
         const payload = { username: document.getElementById('regUsername').value, password: document.getElementById('regPassword').value, gameNick: document.getElementById('regGameNick').value };
         const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await res.json();
-        if (res.ok) {
-            showMsg('regMsg', '✅ Регистрация успешна! Войдите.', false);
-            switchAuth('login');
-        } else {
-            showMsg('regMsg', `❌ ${data.error}`, true);
-        }
+        if (res.ok) { showMsg('regMsg', '✅ Регистрация успешна! Войдите.', false); switchAuth('login'); }
+        else showMsg('regMsg', `❌ ${data.error}`, true);
     }
 
     async function doLogin() {
@@ -563,12 +149,8 @@
             document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
             document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username;
             if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block';
-            loadLeaderboard();
-            loadMyStats();
-            loadAdminStats();
-        } else {
-            showMsg('loginMsg', `❌ ${data.error}`, true);
-        }
+            loadLeaderboard(); loadMyStats(); loadAdminStats();
+        } else showMsg('loginMsg', `❌ ${data.error}`, true);
     }
 
     function logout() { currentUser = null; localStorage.removeItem('user'); location.reload(); }
@@ -577,13 +159,8 @@
     function switchAuth(type) {
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-        if (type === 'login') {
-            document.querySelectorAll('.auth-tab')[0].classList.add('active');
-            document.getElementById('loginForm').classList.add('active');
-        } else {
-            document.querySelectorAll('.auth-tab')[1].classList.add('active');
-            document.getElementById('registerForm').classList.add('active');
-        }
+        if (type === 'login') { document.querySelectorAll('.auth-tab')[0].classList.add('active'); document.getElementById('loginForm').classList.add('active'); }
+        else { document.querySelectorAll('.auth-tab')[1].classList.add('active'); document.getElementById('registerForm').classList.add('active'); }
     }
     function showTab(tab) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -601,8 +178,10 @@
             const container = document.getElementById('leaderboardList');
             container.innerHTML = '';
             if (!data.length) { container.innerHTML = '<div style="text-align:center; padding:40px;">🏆 Пока нет данных</div>'; return; }
-            data.slice(0, 30).forEach((p, i) => {
-                const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+            const search = document.getElementById('searchPlayer')?.value.toLowerCase() || '';
+            const filtered = data.filter(p => (p.game_nick || p.username).toLowerCase().includes(search));
+            filtered.slice(0, 30).forEach((p, i) => {
+                let rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
                 container.innerHTML += `<div class="leaderboard-card"><div class="leaderboard-rank ${rankClass}">#${i+1}</div><div><div><b>${escapeHtml(p.game_nick || p.username)}</b></div><div>💀 ${p.kills} | ⚡ ${p.damage?.toLocaleString()}</div></div></div>`;
             });
         } catch(e) { console.log(e); }
@@ -617,21 +196,28 @@
             container.innerHTML = '';
             if (!stats.length) { container.innerHTML = '<div style="text-align:center; padding:40px;">📭 Нет статистики</div>'; return; }
             stats.forEach(s => {
-                container.innerHTML += `<div class="admin-card"><div class="stat-header"><span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span><span class="stat-date">${new Date(s.date).toLocaleDateString()}</span></div><div class="stat-numbers"><div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div><div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div><div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div><div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div></div><div><span class="stat-status" style="background:#2e7d3240;color:#4caf50;padding:4px 12px;border-radius:20px;">${s.verified ? '✅ Подтверждена' : '⏳ Ожидает'}</span></div></div>`;
+                container.innerHTML += `<div class="admin-card"><div class="stat-header"><span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span><span class="stat-date">${new Date(s.date).toLocaleDateString()}</span></div><div class="stat-numbers"><div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div><div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div><div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div><div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div></div><div><span style="background:#2e7d3240;color:#4caf50;padding:4px 12px;border-radius:20px;">${s.verified ? '✅ Подтверждена' : '⏳ Ожидает'}</span></div></div>`;
             });
         } catch(e) { console.log(e); }
     }
 
-    // ГЛАВНОЕ: АДМИН-ПАНЕЛЬ ВЫВОДИТСЯ ПРЯМО
+    // ========== НОВАЯ АДМИН-ПАНЕЛЬ ==========
     async function loadAdminStats() {
-        if (!currentUser || currentUser.role !== 'admin') {
+        console.log('loadAdminStats вызвана');
+        if (!currentUser) {
+            document.getElementById('adminList').innerHTML = '<div style="text-align:center; padding:40px;">🔐 Войдите в аккаунт</div>';
+            return;
+        }
+        if (currentUser.role !== 'admin') {
             document.getElementById('adminList').innerHTML = '<div style="text-align:center; padding:40px;">🔐 Требуются права администратора</div>';
             return;
         }
         try {
             const res = await fetch('/api/stats/all');
             const allStats = await res.json();
+            console.log('Получено записей:', allStats.length);
             const unverified = allStats.filter(s => !s.verified);
+            console.log('Неподтверждённых:', unverified.length);
             const container = document.getElementById('adminList');
             container.innerHTML = '';
             if (unverified.length === 0) {
@@ -651,9 +237,9 @@
                             <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div>
                             <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px;">
-                            <div>
-                                ${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥 Видео</a>` : ''}
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 10px; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 8px;">
+                                ${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : ''}
                                 ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
                             </div>
                             <div>
@@ -664,52 +250,23 @@
                     </div>
                 `;
             }
-        } catch(e) { console.log(e); container.innerHTML = '<div style="text-align:center; padding:40px;">❌ Ошибка загрузки</div>'; }
+        } catch(e) { 
+            console.log('Ошибка:', e);
+            document.getElementById('adminList').innerHTML = `<div style="text-align:center; padding:40px; color:#ff6b6b;">❌ Ошибка: ${e.message}</div>`;
+        }
     }
 
-    async function verifyStat(id) {
-        await fetch(`/api/stats/${id}/verify`, { method: 'PUT' });
-        loadAdminStats();
-        loadLeaderboard();
-        loadMyStats();
-        showMsg('uploadMsg', '✅ Подтверждено', false);
-    }
-    async function deleteStat(id) {
-        if (!confirm('Удалить?')) return;
-        await fetch(`/api/stats/${id}`, { method: 'DELETE' });
-        loadAdminStats();
-        loadLeaderboard();
-        loadMyStats();
-        showMsg('uploadMsg', '✅ Удалено', false);
-    }
-    function showFullImage(src) {
-        const m = document.createElement('div');
-        m.className = 'modal';
-        m.innerHTML = `<img src="${src}">`;
-        m.onclick = () => m.remove();
-        document.body.appendChild(m);
-    }
-    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
+    async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
+    async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Удалено', false); }
 
-    // OCR
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
         if (!nickToFind) return null;
-        if (!ocrWorker) {
-            ocrWorker = await Tesseract.createWorker('rus+eng', 1);
-            await ocrWorker.setParameters({ tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_', tessedit_pageseg_mode: '6' });
-        }
+        if (!ocrWorker) { ocrWorker = await Tesseract.createWorker('rus+eng', 1); await ocrWorker.setParameters({ tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_', tessedit_pageseg_mode: '6' }); }
         const { data: { text } } = await ocrWorker.recognize(currentImageData);
         const lines = text.split('\n');
-        for (let line of lines) {
-            if (line.toLowerCase().includes(nickToFind.toLowerCase())) {
-                const numbers = line.match(/\d+/g);
-                if (numbers && numbers.length >= 4) {
-                    return { kills: parseInt(numbers[0]), killPercent: parseFloat(numbers[1]), hsPercent: parseFloat(numbers[2]), damage: parseInt(numbers[3]) };
-                }
-            }
-        }
+        for (let line of lines) { if (line.toLowerCase().includes(nickToFind.toLowerCase())) { const numbers = line.match(/\d+/g); if (numbers && numbers.length >= 4) return { kills: parseInt(numbers[0]), killPercent: parseFloat(numbers[1]), hsPercent: parseFloat(numbers[2]), damage: parseInt(numbers[3]) }; } }
         return null;
     }
 
@@ -764,13 +321,8 @@
             document.getElementById('fileInput').value = '';
             document.getElementById('preview').innerHTML = '';
             currentImageData = null;
-            loadMyStats();
-            loadAdminStats();
-            loadLeaderboard();
-        } else {
-            const err = await res.json();
-            showMsg('uploadMsg', `❌ ${err.error}`, true);
-        }
+            loadMyStats(); loadAdminStats(); loadLeaderboard();
+        } else { const err = await res.json(); showMsg('uploadMsg', `❌ ${err.error}`, true); }
     }
 
     const savedUser = localStorage.getItem('user');
@@ -783,13 +335,8 @@
         document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
         document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username;
         if (currentUser.role === 'admin') document.getElementById('adminTab').style.display = 'inline-block';
-        loadLeaderboard();
-        loadMyStats();
-        loadAdminStats();
-    } else {
-        document.getElementById('currentNickDisplay').innerText = localNick;
-        loadLeaderboard();
-    }
+        loadLeaderboard(); loadMyStats(); loadAdminStats();
+    } else { document.getElementById('currentNickDisplay').innerText = localNick; loadLeaderboard(); }
     document.getElementById('searchPlayer')?.addEventListener('input', () => loadLeaderboard());
 </script>
 </body>
