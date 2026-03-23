@@ -224,31 +224,11 @@
         document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
     }
     function switchMain(tab) {
-        const panels = document.querySelectorAll('.tab-content');
-        const tabs = document.querySelectorAll('.tab');
-        if (!panels.length || !tabs.length) return;
-        panels.forEach(el => el.classList.remove('active'));
-        tabs.forEach(el => el.classList.remove('active'));
-        if (tab === 'leaderboard') { 
-            const panel = document.getElementById('leaderboardPanel');
-            const firstTab = document.querySelector('.tabs .tab');
-            if (panel) panel.classList.add('active');
-            if (firstTab) firstTab.classList.add('active');
-        }
-        if (tab === 'mystats') { 
-            const panel = document.getElementById('mystatsPanel');
-            const tabsList = document.querySelectorAll('.tabs .tab');
-            if (panel) panel.classList.add('active');
-            if (tabsList[1]) tabsList[1].classList.add('active');
-            loadMyStats(); 
-        }
-        if (tab === 'admin') { 
-            const panel = document.getElementById('adminPanel');
-            const adminTab = document.getElementById('adminTabBtn');
-            if (panel) panel.classList.add('active');
-            if (adminTab) adminTab.classList.add('active');
-            if (currentUser?.role === 'admin') loadAdminStats(); 
-        }
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        if (tab === 'leaderboard') { document.getElementById('leaderboardPanel').classList.add('active'); document.querySelector('.tabs .tab').classList.add('active'); }
+        if (tab === 'mystats') { document.getElementById('mystatsPanel').classList.add('active'); document.querySelectorAll('.tabs .tab')[1].classList.add('active'); loadMyStats(); }
+        if (tab === 'admin') { document.getElementById('adminPanel').classList.add('active'); document.getElementById('adminTabBtn').classList.add('active'); if (currentUser?.role === 'admin') loadAdminStats(); }
     }
 
     async function loadLeaderboard() {
@@ -461,22 +441,13 @@
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
-        const authModal = document.getElementById('authModal');
-        if (authModal) authModal.style.display = 'none';
-        const uploadPanel = document.getElementById('uploadPanel');
-        if (uploadPanel) uploadPanel.style.display = 'block';
-        const showAuthBtn = document.getElementById('showAuthBtn');
-        if (showAuthBtn) showAuthBtn.style.display = 'none';
-        const userInfoDiv = document.getElementById('userInfo');
-        if (userInfoDiv) userInfoDiv.style.display = 'inline-block';
-        const userNameSpan = document.getElementById('userNameDisplay');
-        if (userNameSpan) userNameSpan.innerHTML = `👤 ${currentUser.username}`;
-        const currentNickSpan = document.getElementById('currentLocalNick');
-        if (currentNickSpan) currentNickSpan.innerText = localNick || currentUser.gameNick || currentUser.username;
-        if (currentUser.role === 'admin') {
-            const adminTab = document.getElementById('adminTabBtn');
-            if (adminTab) adminTab.style.display = 'inline-block';
-        }
+        document.getElementById('authModal').style.display = 'none';
+        document.getElementById('uploadPanel').style.display = 'block';
+        document.getElementById('showAuthBtn').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'inline-block';
+        document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
+        document.getElementById('currentLocalNick').innerText = localNick || currentUser.gameNick || currentUser.username;
+        if (currentUser.role === 'admin') document.getElementById('adminTabBtn').style.display = 'inline-block';
         loadLeaderboard(); loadMyStats(); if (currentUser.role === 'admin') loadAdminStats();
     } else {
         document.getElementById('currentLocalNick').innerText = localNick;
