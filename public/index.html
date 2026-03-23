@@ -37,7 +37,8 @@
         .stat-number-value { font-size: 1.3rem; font-weight: bold; color: #ffd966; }
         .stat-number-label { font-size: 0.7rem; color: #ffd966aa; }
         .screenshot-thumb { width: 45px; height: 45px; border-radius: 10px; cursor: pointer; object-fit: cover; }
-        .leaderboard-card { background: #0a0a0a; border-radius: 16px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+        .leaderboard-card { background: #0a0a0a; border-radius: 16px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.2s; }
+        .leaderboard-card:hover { background: #2c2c2c; transform: translateX(5px); }
         .leaderboard-rank { font-size: 1.4rem; font-weight: bold; width: 45px; text-align: center; }
         .rank-1 { color: gold; } .rank-2 { color: silver; } .rank-3 { color: #cd7f32; }
         .profile-menu { position: relative; display: inline-block; }
@@ -56,10 +57,17 @@
         .auth-form { display: none; }
         .auth-form.active { display: block; }
         .auth-form input { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #ffd96633; border-radius: 40px; color: #ffd966; margin: 10px 0; }
-        .preview-image { max-width: 100%; max-height: 200px; border-radius: 16px; cursor: pointer; margin-top: 10px; }
+        .preview-image { max-width: 100%; max-height: 300px; border-radius: 16px; cursor: crosshair; margin-top: 10px; border: 1px solid #ffd966; }
+        .preview-container { position: relative; display: inline-block; text-align: center; }
         .admin-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #ffd966; }
-        .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #ffd966; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 10px; vertical-align: middle; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .avg-stats { background: #0a0a0a; padding: 15px; border-radius: 20px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-around; }
+        .avg-stat { text-align: center; }
+        .avg-value { font-size: 1.8rem; font-weight: bold; color: #ffd966; }
+        .avg-label { font-size: 0.8rem; color: #ffd966aa; }
+        .back-btn { background: #ffaa33; color: #0a0a0a; margin-bottom: 15px; }
+        .clickable-nick { cursor: pointer; }
+        .clickable-nick:hover { text-decoration: underline; color: #ffaa33; }
         @media (max-width: 700px) { .stats-grid { grid-template-columns: 1fr; } .header-content { flex-direction: column; text-align: center; } }
     </style>
 </head>
@@ -103,13 +111,23 @@
         <h2>📸 Загрузить скриншот</h2>
         <div class="upload-area" id="uploadArea">
             <div style="font-size: 40px;">📸</div>
-            <p>Нажми или перетащи скриншот</p>
+            <p>Нажми или перетащи скриншот<br><small>💡 Кликни на любое число на скриншоте — оно автоматически вставится в поле</small></p>
             <input type="file" id="fileInput" hidden accept="image/*">
         </div>
-        <div id="preview" style="text-align: center;"></div>
+        <div id="preview" class="preview-container"></div>
+        
+        <div class="manual-section">
+            <h3 style="margin-bottom: 15px;">✍️ РУЧНОЙ ВВОД (кликни на число на скриншоте)</h3>
+            <div class="manual-input-row" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <input type="number" id="manualKills" placeholder="Убийства" style="flex:1">
+                <input type="number" id="manualKillPercent" placeholder="% убийств" style="flex:1">
+                <input type="number" id="manualHsPercent" placeholder="HS %" style="flex:1">
+                <input type="number" id="manualDamage" placeholder="Урон" style="flex:1">
+            </div>
+        </div>
+        
         <input type="text" id="videoLink" placeholder="🎥 Ссылка на видео">
-        <div id="ocrResult" style="background: #0a0a0a; padding: 12px; border-radius: 20px; margin: 12px 0; display: none;"></div>
-        <button id="sendBtn" style="display: none;" onclick="sendStats()">📤 Отправить</button>
+        <button id="sendManualBtn" onclick="sendManualStats()">📤 Отправить вручную</button>
         <div id="uploadMsg"></div>
     </div>
 
@@ -119,9 +137,23 @@
             <div class="tab" onclick="showTab('mystats')">📊 МОЯ СТАТИСТИКА</div>
             <div class="tab" id="adminTab" style="display: none;" onclick="showTab('admin')">🔧 АДМИН-ПАНЕЛЬ</div>
         </div>
-        <div id="leaderboardTab" class="tab-content active"><input type="text" id="searchPlayer" placeholder="🔍 Поиск игрока..." style="margin-bottom: 15px;"><div id="leaderboardList"></div></div>
-        <div id="mystatsTab" class="tab-content"><div id="myStatsList"></div></div>
+        <div id="leaderboardTab" class="tab-content active">
+            <input type="text" id="searchPlayer" placeholder="🔍 Поиск игрока..." style="margin-bottom: 15px;">
+            <div id="leaderboardList"></div>
+        </div>
+        <div id="mystatsTab" class="tab-content">
+            <div id="myStatsList"></div>
+        </div>
         <div id="adminTabContent" class="tab-content"></div>
+    </div>
+
+    <div id="profileViewBlock" class="card" style="display: none;">
+        <div class="profile-header">
+            <h2 style="color: #ffd966;">👤 <span id="profileViewName"></span></h2>
+            <button onclick="closeProfileView()" class="btn-outline">← Назад к списку</button>
+        </div>
+        <div id="profileViewAvg" class="avg-stats"></div>
+        <div id="profileViewStats" class="stats-grid"></div>
     </div>
 
     <div id="adminPanelBlock" class="card admin-section" style="display: none;">
@@ -133,117 +165,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
-    let currentUser = null, currentImageData = null, recognizedStats = null, ocrWorker = null;
+    let currentUser = null;
+    let currentImageData = null;
+    let currentPreviewElement = null;
     let localNick = localStorage.getItem('arena_nick') || 'Flik_Homixide';
-
-    // ========== УСИЛЕННАЯ ПРЕДОБРАБОТКА ИЗОБРАЖЕНИЯ ==========
-    function enhanceImage(base64) {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-                // Масштабируем для лучшего распознавания (увеличиваем в 2 раза)
-                const scale = 2;
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width * scale;
-                canvas.height = img.height * scale;
-                const ctx = canvas.getContext('2d');
-                
-                // Рисуем увеличенное изображение с интерполяцией
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                // Получаем пиксели
-                let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                let data = imageData.data;
-                
-                // 1. Автоконтраст (растягиваем гистограмму)
-                let min = 255, max = 0;
-                for (let i = 0; i < data.length; i += 4) {
-                    const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
-                    if (brightness < min) min = brightness;
-                    if (brightness > max) max = brightness;
-                }
-                const range = max - min;
-                
-                // 2. Применяем автоконтраст и делаем ч/б
-                for (let i = 0; i < data.length; i += 4) {
-                    let brightness = (data[i] + data[i+1] + data[i+2]) / 3;
-                    // Нормализация
-                    if (range > 0) {
-                        brightness = ((brightness - min) / range) * 255;
-                    }
-                    // Адаптивный порог с локальным усреднением
-                    const value = brightness > 140 ? 255 : 0;
-                    data[i] = value;
-                    data[i+1] = value;
-                    data[i+2] = value;
-                }
-                ctx.putImageData(imageData, 0, 0);
-                
-                // 3. Медианный фильтр для удаления шума (3x3)
-                const width = canvas.width;
-                const height = canvas.height;
-                const filteredData = ctx.getImageData(0, 0, width, height);
-                const filteredPixels = filteredData.data;
-                
-                for (let y = 1; y < height - 1; y++) {
-                    for (let x = 1; x < width - 1; x++) {
-                        const neighbors = [];
-                        for (let dy = -1; dy <= 1; dy++) {
-                            for (let dx = -1; dx <= 1; dx++) {
-                                const idx = ((y + dy) * width + (x + dx)) * 4;
-                                neighbors.push(data[idx]);
-                            }
-                        }
-                        neighbors.sort((a, b) => a - b);
-                        const median = neighbors[4];
-                        const idx = (y * width + x) * 4;
-                        filteredPixels[idx] = median;
-                        filteredPixels[idx+1] = median;
-                        filteredPixels[idx+2] = median;
-                    }
-                }
-                ctx.putImageData(filteredData, 0, 0);
-                
-                // 4. Повышение резкости (unsharp mask)
-                const sharpData = ctx.getImageData(0, 0, width, height);
-                const sharpPixels = sharpData.data;
-                
-                // Создаём размытую версию
-                const blurred = ctx.getImageData(0, 0, width, height);
-                const blurredPixels = blurred.data;
-                for (let y = 1; y < height - 1; y++) {
-                    for (let x = 1; x < width - 1; x++) {
-                        let sum = 0;
-                        for (let dy = -1; dy <= 1; dy++) {
-                            for (let dx = -1; dx <= 1; dx++) {
-                                const idx = ((y + dy) * width + (x + dx)) * 4;
-                                sum += filteredPixels[idx];
-                            }
-                        }
-                        const idx = (y * width + x) * 4;
-                        blurredPixels[idx] = sum / 9;
-                        blurredPixels[idx+1] = sum / 9;
-                        blurredPixels[idx+2] = sum / 9;
-                    }
-                }
-                
-                // Повышение резкости: оригинал + (оригинал - размытое) * коэффициент
-                for (let i = 0; i < sharpPixels.length; i += 4) {
-                    const original = filteredPixels[i];
-                    const blur = blurredPixels[i];
-                    let sharpened = original + (original - blur) * 1.5;
-                    sharpened = Math.min(255, Math.max(0, sharpened));
-                    sharpPixels[i] = sharpened;
-                    sharpPixels[i+1] = sharpened;
-                    sharpPixels[i+2] = sharpened;
-                }
-                ctx.putImageData(sharpData, 0, 0);
-                
-                resolve(canvas.toDataURL('image/png'));
-            };
-            img.src = base64;
-        });
-    }
+    let viewingProfile = false;
 
     function showMsg(elId, msg, isError) { 
         const el = document.getElementById(elId); 
@@ -331,11 +257,86 @@
         else { document.querySelectorAll('.auth-tab')[1].classList.add('active'); document.getElementById('registerForm').classList.add('active'); }
     }
     function showTab(tab) {
+        if (viewingProfile) {
+            closeProfileView();
+        }
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
         document.getElementById(tab + 'Tab').classList.add('active');
         if (tab === 'leaderboard') loadLeaderboard();
         if (tab === 'mystats') loadMyStats();
+    }
+
+    // ========== ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ==========
+    async function showUserProfile(username) {
+        viewingProfile = true;
+        document.getElementById('profileViewName').innerText = username;
+        document.getElementById('profileViewBlock').style.display = 'block';
+        document.getElementById('leaderboardTab').style.display = 'none';
+        document.getElementById('mystatsTab').style.display = 'none';
+        document.getElementById('adminTabContent').style.display = 'none';
+        
+        // Загружаем средние показатели
+        const avgRes = await fetch(`/api/stats/user/${encodeURIComponent(username)}/average`);
+        const avgData = await avgRes.json();
+        const avgHtml = `
+            <div class="avg-stat"><div class="avg-value">${avgData.total_matches || 0}</div><div class="avg-label">Матчей</div></div>
+            <div class="avg-stat"><div class="avg-value">${Math.round(avgData.avg_kills || 0)}</div><div class="avg-label">Ср. убийств</div></div>
+            <div class="avg-stat"><div class="avg-value">${Math.round(avgData.avg_damage || 0).toLocaleString()}</div><div class="avg-label">Ср. урона</div></div>
+            <div class="avg-stat"><div class="avg-value">${avgData.total_kills || 0}</div><div class="avg-label">Всего убийств</div></div>
+            <div class="avg-stat"><div class="avg-value">${(avgData.total_damage || 0).toLocaleString()}</div><div class="avg-label">Всего урона</div></div>
+            <div class="avg-stat"><div class="avg-value">${avgData.max_kills || 0}</div><div class="avg-label">Макс убийств</div></div>
+            <div class="avg-stat"><div class="avg-value">${(avgData.max_damage || 0).toLocaleString()}</div><div class="avg-label">Макс урона</div></div>
+        `;
+        document.getElementById('profileViewAvg').innerHTML = avgHtml;
+        
+        // Загружаем все матчи
+        const statsRes = await fetch(`/api/stats/user/${encodeURIComponent(username)}`);
+        const stats = await statsRes.json();
+        const statsContainer = document.getElementById('profileViewStats');
+        statsContainer.innerHTML = '';
+        if (!stats.length) {
+            statsContainer.innerHTML = '<div style="text-align:center; padding:40px;">📭 Нет статистики</div>';
+        } else {
+            stats.forEach(s => {
+                statsContainer.innerHTML += `
+                    <div class="admin-card">
+                        <div class="stat-header">
+                            <span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span>
+                            <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
+                        </div>
+                        <div class="stat-numbers">
+                            <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            ${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥 Видео</a>` : ''}
+                            ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    }
+    
+    function closeProfileView() {
+        viewingProfile = false;
+        document.getElementById('profileViewBlock').style.display = 'none';
+        document.getElementById('leaderboardTab').style.display = 'block';
+        document.getElementById('mystatsTab').style.display = 'block';
+        if (currentUser?.role === 'admin') {
+            document.getElementById('adminTabContent').style.display = 'block';
+        }
+        // Возвращаем активную вкладку
+        const activeTab = document.querySelector('.tab.active');
+        if (activeTab) {
+            const tabText = activeTab.innerText;
+            if (tabText.includes('ЛИДЕРБОРД')) showTab('leaderboard');
+            else if (tabText.includes('МОЯ')) showTab('mystats');
+            else if (tabText.includes('АДМИН')) showTab('admin');
+        }
     }
 
     async function loadLeaderboard() {
@@ -349,7 +350,15 @@
             const filtered = data.filter(p => (p.game_nick || p.username).toLowerCase().includes(search));
             filtered.slice(0, 30).forEach((p, i) => {
                 let rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
-                container.innerHTML += `<div class="leaderboard-card"><div class="leaderboard-rank ${rankClass}">#${i+1}</div><div><div><b>${escapeHtml(p.game_nick || p.username)}</b></div><div>💀 ${p.kills} | ⚡ ${p.damage?.toLocaleString()}</div></div></div>`;
+                container.innerHTML += `
+                    <div class="leaderboard-card" onclick="showUserProfile('${escapeHtml(p.username)}')">
+                        <div class="leaderboard-rank ${rankClass}">#${i+1}</div>
+                        <div>
+                            <div><b class="clickable-nick">${escapeHtml(p.game_nick || p.username)}</b></div>
+                            <div>💀 ${p.kills} | ⚡ ${p.damage?.toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
             });
         } catch(e) { console.log(e); }
     }
@@ -361,12 +370,51 @@
             const stats = await res.json();
             const container = document.getElementById('myStatsList');
             container.innerHTML = '';
-            if (!stats.length) { container.innerHTML = '<div style="text-align:center; padding:40px;">📭 Нет статистики</div>'; return; }
+            if (!stats.length) { container.innerHTML = '<div style="text-align:center; padding:40px;">📭 Нет статистики. Загрузите скриншот!</div>'; return; }
+            
+            // Средние показатели для текущего пользователя
+            const avgRes = await fetch(`/api/stats/user/${encodeURIComponent(currentUser.username)}/average`);
+            const avgData = await avgRes.json();
+            const avgHtml = `
+                <div class="avg-stats" style="margin-bottom: 20px;">
+                    <div class="avg-stat"><div class="avg-value">${avgData.total_matches || 0}</div><div class="avg-label">Матчей</div></div>
+                    <div class="avg-stat"><div class="avg-value">${Math.round(avgData.avg_kills || 0)}</div><div class="avg-label">Ср. убийств</div></div>
+                    <div class="avg-stat"><div class="avg-value">${Math.round(avgData.avg_damage || 0).toLocaleString()}</div><div class="avg-label">Ср. урона</div></div>
+                    <div class="avg-stat"><div class="avg-value">${avgData.total_kills || 0}</div><div class="avg-label">Всего убийств</div></div>
+                    <div class="avg-stat"><div class="avg-value">${(avgData.total_damage || 0).toLocaleString()}</div><div class="avg-label">Всего урона</div></div>
+                    <div class="avg-stat"><div class="avg-value">${avgData.max_kills || 0}</div><div class="avg-label">Макс убийств</div></div>
+                    <div class="avg-stat"><div class="avg-value">${(avgData.max_damage || 0).toLocaleString()}</div><div class="avg-label">Макс урона</div></div>
+                </div>
+            `;
+            container.innerHTML = avgHtml;
+            
             stats.forEach(s => {
-                container.innerHTML += `<div class="admin-card"><div class="stat-header"><span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span><span class="stat-date">${new Date(s.date).toLocaleDateString()}</span></div><div class="stat-numbers"><div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div><div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div><div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div><div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div></div><div><span style="background:#2e7d3240;color:#4caf50;padding:4px 12px;border-radius:20px;">${s.verified ? '✅ Подтверждена' : '⏳ Ожидает'}</span></div></div>`;
+                container.innerHTML += `
+                    <div class="admin-card">
+                        <div class="stat-header">
+                            <span class="stat-nick">${escapeHtml(s.game_nick || s.username)}</span>
+                            <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
+                        </div>
+                        <div class="stat-numbers">
+                            <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">💀</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">🎯</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">💥</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">⚡</div></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; gap: 8px;">
+                                ${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥 Видео</a>` : ''}
+                                ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}
+                            </div>
+                            ${!s.verified ? `<button onclick="deleteMyStat(${s.id})" style="background:#c62828; padding:4px 12px;">🗑️ Удалить</button>` : ''}
+                        </div>
+                    </div>
+                `;
             });
         } catch(e) { console.log(e); }
     }
+
+    async function deleteMyStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadMyStats(); loadLeaderboard(); showMsg('uploadMsg', '✅ Удалено', false); }
 
     async function loadAdminStatsDirect() {
         if (!currentUser || currentUser.role !== 'admin') return;
@@ -376,7 +424,6 @@
             const unverified = allStats.filter(s => !s.verified);
             const container = document.getElementById('adminDirectList');
             if (!container) return;
-            
             let html = '';
             if (unverified.length === 0) {
                 html = '<div style="text-align:center; padding:40px;">✅ Нет неподтверждённой статистики</div>';
@@ -415,43 +462,137 @@
     async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Удалено', false); }
 
-    // ========== НЕЙРОНКА С УСИЛЕННОЙ ПРЕДОБРАБОТКОЙ ==========
-    async function findMyStatsInScreenshot() {
-        if (!currentImageData) return null;
-        const nickToFind = getCurrentNick();
-        if (!nickToFind) return null;
+    // ========== РУЧНОЙ ВВОД С АВТО-ЗАПОЛНЕНИЕМ ==========
+    function setupAutoFill() {
+        const previewDiv = document.getElementById('preview');
+        if (!previewDiv) return;
         
-        // Усиленная предобработка
-        const enhancedImage = await enhanceImage(currentImageData);
-        
-        if (!ocrWorker) {
-            ocrWorker = await Tesseract.createWorker('rus+eng', 1);
-            await ocrWorker.setParameters({ 
-                tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_',
-                tessedit_pageseg_mode: '6' 
-            });
-        }
-        
-        const { data: { text } } = await ocrWorker.recognize(enhancedImage);
-        
-        const lines = text.split('\n');
-        const nickLower = nickToFind.toLowerCase();
-        
-        for (let line of lines) {
-            const cleanLine = line.replace(/[^a-z0-9_]/gi, ' ').toLowerCase();
-            if (cleanLine.includes(nickLower)) {
-                const numbers = line.match(/\d+/g);
-                if (numbers && numbers.length >= 4) {
-                    return {
-                        kills: parseInt(numbers[0]),
-                        killPercent: parseFloat(numbers[1]),
-                        hsPercent: parseFloat(numbers[2]),
-                        damage: parseInt(numbers[3])
+        previewDiv.addEventListener('click', (e) => {
+            const target = e.target;
+            if (target.tagName === 'IMG') {
+                const rect = target.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const scaleX = target.naturalWidth / rect.width;
+                const scaleY = target.naturalHeight / rect.height;
+                const imgX = Math.floor(x * scaleX);
+                const imgY = Math.floor(y * scaleY);
+                
+                // Создаём canvas для получения цвета пикселя
+                const canvas = document.createElement('canvas');
+                canvas.width = target.naturalWidth;
+                canvas.height = target.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0);
+                    const pixel = ctx.getImageData(imgX, imgY, 1, 1).data;
+                    const brightness = (pixel[0] + pixel[1] + pixel[2]) / 3;
+                    
+                    // Показываем подсказку
+                    showMsg('uploadMsg', `Кликните на число, которое хотите вставить`, false);
+                    
+                    // Ждём следующий клик на скриншоте
+                    const onImageClick = (event) => {
+                        const rect2 = target.getBoundingClientRect();
+                        const x2 = event.clientX - rect2.left;
+                        const y2 = event.clientY - rect2.top;
+                        const imgX2 = Math.floor(x2 * scaleX);
+                        const imgY2 = Math.floor(y2 * scaleY);
+                        
+                        // Создаём временный canvas для распознавания области
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = 100;
+                        tempCanvas.height = 50;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.drawImage(target, imgX2 - 20, imgY2 - 10, 60, 30, 0, 0, 100, 50);
+                        
+                        // Распознаём число
+                        Tesseract.recognize(tempCanvas.toDataURL(), 'eng', {
+                            tessedit_char_whitelist: '0123456789',
+                            tessedit_pageseg_mode: '7'
+                        }).then(({ data: { text } }) => {
+                            const number = parseInt(text.replace(/[^0-9]/g, ''));
+                            if (!isNaN(number) && number > 0) {
+                                // Определяем, в какое поле вставить
+                                const activeField = document.activeElement;
+                                if (activeField && activeField.id) {
+                                    document.getElementById(activeField.id).value = number;
+                                    showMsg('uploadMsg', `✅ Вставлено: ${number}`, false);
+                                } else {
+                                    // Если не выбрано поле, спрашиваем
+                                    const field = prompt(`Вставлено число ${number}. Выберите поле:\n1 - Убийства\n2 - % убийств\n3 - HS%\n4 - Урон`, '1');
+                                    if (field === '1') document.getElementById('manualKills').value = number;
+                                    else if (field === '2') document.getElementById('manualKillPercent').value = number;
+                                    else if (field === '3') document.getElementById('manualHsPercent').value = number;
+                                    else if (field === '4') document.getElementById('manualDamage').value = number;
+                                }
+                            }
+                        });
+                        target.removeEventListener('click', onImageClick);
                     };
-                }
+                    target.addEventListener('click', onImageClick);
+                };
+                img.src = target.src;
             }
+        });
+    }
+
+    async function sendManualStats() {
+        if (!currentUser) { alert('Войдите в аккаунт'); return; }
+        if (!currentImageData) { alert('Сначала загрузите скриншот'); return; }
+        
+        const kills = parseInt(document.getElementById('manualKills').value);
+        const killPercent = parseFloat(document.getElementById('manualKillPercent').value);
+        const hsPercent = parseFloat(document.getElementById('manualHsPercent').value);
+        const damage = parseInt(document.getElementById('manualDamage').value);
+        
+        if (!kills || !damage) {
+            alert('Заполните убийства и урон (можно кликнуть на числа на скриншоте)');
+            return;
         }
-        return null;
+        
+        const compressed = await new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+                if (w > 800) { h = (h * 800) / w; w = 800; }
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', 0.6));
+            };
+            img.src = currentImageData;
+        });
+        
+        const payload = {
+            username: currentUser.username,
+            kills: kills,
+            killPercent: killPercent || 0,
+            hsPercent: hsPercent || 0,
+            damage: damage,
+            videoLink: document.getElementById('videoLink').value,
+            screenshot: compressed
+        };
+        
+        const res = await fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (res.ok) {
+            showMsg('uploadMsg', '✅ Статистика отправлена!', false);
+            document.getElementById('manualKills').value = '';
+            document.getElementById('manualKillPercent').value = '';
+            document.getElementById('manualHsPercent').value = '';
+            document.getElementById('manualDamage').value = '';
+            document.getElementById('videoLink').value = '';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('preview').innerHTML = '';
+            currentImageData = null;
+            loadMyStats(); 
+            if (currentUser.role === 'admin') loadAdminStatsDirect();
+            loadLeaderboard();
+        } else { 
+            const err = await res.json(); 
+            showMsg('uploadMsg', `❌ ${err.error}`, true); 
+        }
     }
 
     // Функция обработки загруженного файла
@@ -461,36 +602,9 @@
         const reader = new FileReader();
         reader.onload = async (ev) => {
             currentImageData = ev.target.result;
-            document.getElementById('preview').innerHTML = `<img src="${currentImageData}" class="preview-image" onclick="showFullImage('${currentImageData}')">`;
-            
-            const nick = getCurrentNick();
-            if (!nick) { 
-                document.getElementById('ocrResult').innerHTML = `⚠️ Сохраните ник в профиле`; 
-                document.getElementById('ocrResult').style.display = 'block'; 
-                document.getElementById('sendBtn').style.display = 'none';
-                return; 
-            }
-            
-            document.getElementById('ocrResult').innerHTML = `🔍 Улучшение изображения и распознавание... <span class="loading-spinner"></span>`;
-            document.getElementById('ocrResult').style.display = 'block';
-            document.getElementById('sendBtn').style.display = 'none';
-            
-            try {
-                const stats = await findMyStatsInScreenshot();
-                if (stats) {
-                    recognizedStats = stats;
-                    document.getElementById('ocrResult').innerHTML = `✅ Найдено! 💀${stats.kills} | 🎯${stats.killPercent}% | 💥${stats.hsPercent}% | ⚡${stats.damage.toLocaleString()}`;
-                    document.getElementById('sendBtn').style.display = 'block';
-                } else {
-                    document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}" в таблице. Попробуйте другой скриншот.`;
-                    document.getElementById('sendBtn').style.display = 'none';
-                    recognizedStats = null;
-                }
-            } catch (error) {
-                document.getElementById('ocrResult').innerHTML = `❌ Ошибка: ${error.message}`;
-                document.getElementById('sendBtn').style.display = 'none';
-                recognizedStats = null;
-            }
+            document.getElementById('preview').innerHTML = `<img src="${currentImageData}" class="preview-image" onclick="showFullImage('${currentImageData}')" style="cursor: crosshair;">`;
+            setupAutoFill();
+            showMsg('uploadMsg', '✅ Скриншот загружен. Кликни на число, чтобы вставить в поле', false);
         };
         reader.readAsDataURL(file);
     }
@@ -513,7 +627,6 @@
         }
     });
 
-    // Клик для выбора файла
     uploadArea.onclick = () => document.getElementById('fileInput').click();
     document.getElementById('fileInput').onchange = async (e) => {
         const file = e.target.files[0];
@@ -521,52 +634,6 @@
             await processFile(file);
         }
     };
-
-    async function sendStats() {
-        if (!currentUser) { alert('Войдите в аккаунт'); return; }
-        if (!recognizedStats) { alert('Сначала распознайте ник'); return; }
-        
-        const compressed = await new Promise(resolve => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let w = img.width, h = img.height;
-                if (w > 800) { h = (h * 800) / w; w = 800; }
-                canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                resolve(canvas.toDataURL('image/jpeg', 0.6));
-            };
-            img.src = currentImageData;
-        });
-        
-        const payload = {
-            username: currentUser.username,
-            kills: recognizedStats.kills,
-            killPercent: recognizedStats.killPercent,
-            hsPercent: recognizedStats.hsPercent,
-            damage: recognizedStats.damage,
-            videoLink: document.getElementById('videoLink').value,
-            screenshot: compressed
-        };
-        
-        const res = await fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if (res.ok) {
-            showMsg('uploadMsg', '✅ Статистика отправлена!', false);
-            recognizedStats = null;
-            document.getElementById('ocrResult').style.display = 'none';
-            document.getElementById('sendBtn').style.display = 'none';
-            document.getElementById('videoLink').value = '';
-            document.getElementById('fileInput').value = '';
-            document.getElementById('preview').innerHTML = '';
-            currentImageData = null;
-            loadMyStats(); 
-            if (currentUser.role === 'admin') loadAdminStatsDirect();
-            loadLeaderboard();
-        } else { 
-            const err = await res.json(); 
-            showMsg('uploadMsg', `❌ ${err.error}`, true); 
-        }
-    }
 
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
