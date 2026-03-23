@@ -116,7 +116,6 @@
         <div id="adminTabContent" class="tab-content"></div>
     </div>
 
-    <!-- АДМИН-ПАНЕЛЬ ОТДЕЛЬНЫМ БЛОКОМ -->
     <div id="adminPanelBlock" class="card admin-section" style="display: none;">
         <h2 style="color: #ffd966; margin-bottom: 20px;">🔧 АДМИН-ПАНЕЛЬ (неподтверждённая статистика)</h2>
         <button onclick="loadAdminStatsDirect()" style="margin-bottom: 15px; background:#ffaa33;">🔄 ОБНОВИТЬ</button>
@@ -130,8 +129,43 @@
     let localNick = localStorage.getItem('arena_nick') || 'Flik_Homixide';
 
     function showMsg(elId, msg, isError) { const el = document.getElementById(elId); if (el) { el.innerHTML = `<div class="status-msg ${isError ? 'error' : 'success'}">${msg}</div>`; setTimeout(() => el.innerHTML = '', 4000); } }
-    function saveNick() { const newNick = document.getElementById('nickInput').value.trim(); if (!newNick) return; localNick = newNick; localStorage.setItem('arena_nick', localNick); document.getElementById('currentNickDisplay').innerText = localNick; showMsg('uploadMsg', `✅ Ник сохранён: ${localNick}`, false); }
-    function getCurrentNick() { return localNick || (currentUser?.gameNick) || (currentUser?.username) || ''; }
+    
+    async function saveNick() {
+        const newNick = document.getElementById('nickInput').value.trim();
+        if (!newNick) return;
+        if (!currentUser) {
+            localNick = newNick;
+            localStorage.setItem('arena_nick', localNick);
+            document.getElementById('currentNickDisplay').innerText = localNick;
+            showMsg('uploadMsg', `✅ Ник сохранён локально: ${localNick}`, false);
+            return;
+        }
+        const res = await fetch('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser.username, gameNick: newNick })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            currentUser.gameNick = data.user.gameNick;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            document.getElementById('currentNickDisplay').innerText = currentUser.gameNick;
+            showMsg('uploadMsg', `✅ Ник обновлён: ${currentUser.gameNick}`, false);
+            loadLeaderboard();
+            loadMyStats();
+            if (currentUser.role === 'admin') loadAdminStatsDirect();
+        } else {
+            showMsg('uploadMsg', `❌ ${data.error}`, true);
+        }
+        document.getElementById('nickInput').value = '';
+    }
+    
+    function getCurrentNick() { 
+        if (currentUser?.gameNick) return currentUser.gameNick;
+        if (localNick) return localNick;
+        return currentUser?.username || '';
+    }
+
     function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
@@ -155,7 +189,7 @@
             document.getElementById('showAuthBtn').style.display = 'none';
             document.getElementById('userInfo').style.display = 'inline-block';
             document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
-            document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username;
+            document.getElementById('currentNickDisplay').innerText = currentUser.gameNick || currentUser.username;
             if (currentUser.role === 'admin') {
                 document.getElementById('adminTab').style.display = 'inline-block';
                 document.getElementById('adminPanelBlock').style.display = 'block';
@@ -212,7 +246,6 @@
         } catch(e) { console.log(e); }
     }
 
-    // АДМИН-ПАНЕЛЬ
     async function loadAdminStatsDirect() {
         if (!currentUser || currentUser.role !== 'admin') return;
         try {
@@ -260,14 +293,41 @@
     async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Подтверждено', false); }
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStatsDirect(); loadLeaderboard(); loadMyStats(); showMsg('uploadMsg', '✅ Удалено', false); }
 
+    // УЛУЧШЕННАЯ НЕЙРОНКА
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
         if (!nickToFind) return null;
-        if (!ocrWorker) { ocrWorker = await Tesseract.createWorker('rus+eng', 1); await ocrWorker.setParameters({ tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_', tessedit_pageseg_mode: '6' }); }
+        
+        if (!ocrWorker) {
+            ocrWorker = await Tesseract.createWorker('rus+eng', 1);
+            await ocrWorker.setParameters({ 
+                tessedit_char_whitelist: '0123456789%abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_',
+                tessedit_pageseg_mode: '6' 
+            });
+        }
+        
         const { data: { text } } = await ocrWorker.recognize(currentImageData);
+        
+        // Очищаем текст от лишних символов и ищем строку с ником
         const lines = text.split('\n');
-        for (let line of lines) { if (line.toLowerCase().includes(nickToFind.toLowerCase())) { const numbers = line.match(/\d+/g); if (numbers && numbers.length >= 4) return { kills: parseInt(numbers[0]), killPercent: parseFloat(numbers[1]), hsPercent: parseFloat(numbers[2]), damage: parseInt(numbers[3]) }; } }
+        const nickLower = nickToFind.toLowerCase();
+        
+        for (let line of lines) {
+            // Очищаем строку от лишних символов для поиска
+            const cleanLine = line.replace(/[^a-z0-9_]/gi, ' ').toLowerCase();
+            if (cleanLine.includes(nickLower)) {
+                const numbers = line.match(/\d+/g);
+                if (numbers && numbers.length >= 4) {
+                    return {
+                        kills: parseInt(numbers[0]),
+                        killPercent: parseFloat(numbers[1]),
+                        hsPercent: parseFloat(numbers[2]),
+                        damage: parseInt(numbers[3])
+                    };
+                }
+            }
+        }
         return null;
     }
 
@@ -279,17 +339,23 @@
                 currentImageData = ev.target.result;
                 document.getElementById('preview').innerHTML = `<img src="${currentImageData}" class="preview-image" onclick="showFullImage('${currentImageData}')">`;
                 const nick = getCurrentNick();
-                if (!nick) { document.getElementById('ocrResult').innerHTML = `⚠️ Сохраните ник`; document.getElementById('ocrResult').style.display = 'block'; return; }
+                if (!nick) { 
+                    document.getElementById('ocrResult').innerHTML = `⚠️ Сохраните ник в профиле`; 
+                    document.getElementById('ocrResult').style.display = 'block'; 
+                    return; 
+                }
+                document.getElementById('ocrResult').innerHTML = `🔍 Распознавание...`;
+                document.getElementById('ocrResult').style.display = 'block';
+                
                 const stats = await findMyStatsInScreenshot();
                 if (stats) {
                     recognizedStats = stats;
                     document.getElementById('ocrResult').innerHTML = `✅ Найдено! 💀${stats.kills} | 🎯${stats.killPercent}% | 💥${stats.hsPercent}% | ⚡${stats.damage.toLocaleString()}`;
-                    document.getElementById('ocrResult').style.display = 'block';
                     document.getElementById('sendBtn').style.display = 'block';
                 } else {
-                    document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}"`;
-                    document.getElementById('ocrResult').style.display = 'block';
+                    document.getElementById('ocrResult').innerHTML = `❌ Не найден ник "${nick}" в таблице. Попробуйте другой скриншот.`;
                     document.getElementById('sendBtn').style.display = 'none';
+                    recognizedStats = null;
                 }
             };
             reader.readAsDataURL(f);
@@ -297,8 +363,9 @@
     };
 
     async function sendStats() {
-        if (!currentUser) { alert('Войдите'); return; }
+        if (!currentUser) { alert('Войдите в аккаунт'); return; }
         if (!recognizedStats) { alert('Сначала распознайте ник'); return; }
+        
         const compressed = await new Promise(resolve => {
             const img = new Image();
             img.onload = () => {
@@ -311,10 +378,20 @@
             };
             img.src = currentImageData;
         });
-        const payload = { username: currentUser.username, kills: recognizedStats.kills, killPercent: recognizedStats.killPercent, hsPercent: recognizedStats.hsPercent, damage: recognizedStats.damage, videoLink: document.getElementById('videoLink').value, screenshot: compressed };
+        
+        const payload = {
+            username: currentUser.username,
+            kills: recognizedStats.kills,
+            killPercent: recognizedStats.killPercent,
+            hsPercent: recognizedStats.hsPercent,
+            damage: recognizedStats.damage,
+            videoLink: document.getElementById('videoLink').value,
+            screenshot: compressed
+        };
+        
         const res = await fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (res.ok) {
-            showMsg('uploadMsg', '✅ Отправлено!', false);
+            showMsg('uploadMsg', '✅ Статистика отправлена!', false);
             recognizedStats = null;
             document.getElementById('ocrResult').style.display = 'none';
             document.getElementById('sendBtn').style.display = 'none';
@@ -322,8 +399,13 @@
             document.getElementById('fileInput').value = '';
             document.getElementById('preview').innerHTML = '';
             currentImageData = null;
-            loadMyStats(); loadAdminStatsDirect(); loadLeaderboard();
-        } else { const err = await res.json(); showMsg('uploadMsg', `❌ ${err.error}`, true); }
+            loadMyStats(); 
+            if (currentUser.role === 'admin') loadAdminStatsDirect();
+            loadLeaderboard();
+        } else { 
+            const err = await res.json(); 
+            showMsg('uploadMsg', `❌ ${err.error}`, true); 
+        }
     }
 
     const savedUser = localStorage.getItem('user');
@@ -334,14 +416,17 @@
         document.getElementById('showAuthBtn').style.display = 'none';
         document.getElementById('userInfo').style.display = 'inline-block';
         document.getElementById('userNameDisplay').innerHTML = `👤 ${currentUser.username}`;
-        document.getElementById('currentNickDisplay').innerText = localNick || currentUser.gameNick || currentUser.username;
+        document.getElementById('currentNickDisplay').innerText = currentUser.gameNick || currentUser.username;
         if (currentUser.role === 'admin') {
             document.getElementById('adminTab').style.display = 'inline-block';
             document.getElementById('adminPanelBlock').style.display = 'block';
             loadAdminStatsDirect();
         }
         loadLeaderboard(); loadMyStats();
-    } else { document.getElementById('currentNickDisplay').innerText = localNick; loadLeaderboard(); }
+    } else { 
+        document.getElementById('currentNickDisplay').innerText = localNick; 
+        loadLeaderboard(); 
+    }
     document.getElementById('searchPlayer')?.addEventListener('input', () => loadLeaderboard());
 </script>
 </body>
