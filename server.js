@@ -21,7 +21,7 @@ function loadData() {
             data = { users: [], stats: [] };
         }
         
-        // Проверяем наличие админа
+        // Проверяем админа
         const adminExists = data.users.find(u => u.username === 'admin');
         if (!adminExists) {
             const adminHash = bcrypt.hashSync('gtafak', 10);
@@ -29,10 +29,13 @@ function loadData() {
             console.log('✅ Админ создан');
         }
         
-        // Проверяем наличие тестовых записей (если нет ни одной неподтверждённой)
+        // ПРИНУДИТЕЛЬНО ДОБАВЛЯЕМ ТЕСТОВЫЕ ЗАПИСИ, ЕСЛИ ИХ НЕТ
         const unverifiedCount = data.stats.filter(s => !s.verified).length;
-        if (unverifiedCount === 0) {
-            // Добавляем тестовые записи для админки
+        if (unverifiedCount < 3) {
+            // Удаляем старые неподтверждённые
+            data.stats = data.stats.filter(s => s.verified);
+            
+            // Добавляем новые тестовые
             const testStats = [
                 {
                     id: Date.now() + 1,
@@ -76,7 +79,7 @@ function loadData() {
             ];
             data.stats.push(...testStats);
             saveData();
-            console.log('📊 Добавлены тестовые записи в админ-панель');
+            console.log('📊 Добавлены тестовые записи в админ-панель (3 штуки)');
         }
         
     } catch(e) { console.error('Ошибка загрузки:', e); }
