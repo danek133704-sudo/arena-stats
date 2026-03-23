@@ -18,7 +18,6 @@
             color: #ffd966;
         }
 
-        /* Header */
         .header {
             background: rgba(26, 26, 26, 0.95);
             backdrop-filter: blur(10px);
@@ -72,7 +71,6 @@
             color: #1a1a1a;
         }
 
-        /* Buttons */
         button {
             background: linear-gradient(135deg, #ffd966, #ffaa33);
             border: none;
@@ -97,7 +95,6 @@
 
         .btn-outline:hover {
             background: #ffd96622;
-            transform: translateY(-2px);
         }
 
         .container {
@@ -106,7 +103,6 @@
             padding: 30px;
         }
 
-        /* Cards */
         .card {
             background: #111111cc;
             border-radius: 28px;
@@ -116,11 +112,6 @@
             transition: all 0.3s;
         }
 
-        .card:hover {
-            border-color: rgba(255, 217, 102, 0.5);
-        }
-
-        /* Upload area */
         .upload-area {
             border: 2px dashed #ffd966;
             border-radius: 24px;
@@ -153,7 +144,6 @@
             box-shadow: 0 0 8px #ffd966;
         }
 
-        /* Tabs */
         .tabs {
             display: flex;
             gap: 12px;
@@ -196,7 +186,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Stat Cards */
+        /* Cards */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -252,7 +242,7 @@
         }
 
         .stat-number-value {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             color: #ffd966;
         }
@@ -286,11 +276,7 @@
             margin-top: 12px;
             display: flex;
             gap: 10px;
-        }
-
-        .stat-actions button {
-            padding: 6px 16px;
-            font-size: 12px;
+            flex-wrap: wrap;
         }
 
         .screenshot-thumb {
@@ -307,7 +293,7 @@
             box-shadow: 0 0 8px #ffd966;
         }
 
-        /* Leaderboard Cards */
+        /* Leaderboard */
         .leaderboard-card {
             background: #1a1a1a;
             border-radius: 16px;
@@ -388,7 +374,6 @@
             padding: 8px 16px;
         }
 
-        /* Modal */
         .modal {
             position: fixed;
             top: 0;
@@ -438,6 +423,33 @@
             max-height: 200px;
             overflow: auto;
             margin-top: 15px;
+        }
+
+        .metrics-card {
+            background: #0a0a0a;
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #ffd96633;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffd966;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #ffd966aa;
         }
 
         @media (max-width: 700px) {
@@ -530,6 +542,7 @@
         </div>
 
         <div id="mystatsTab" class="tab-content">
+            <div id="myStatsMetrics"></div>
             <div id="myStatsList"></div>
         </div>
 
@@ -680,8 +693,8 @@
                         <div class="leaderboard-info">
                             <div class="leaderboard-name">${p.game_nick || p.username}</div>
                             <div class="leaderboard-stats">
-                                <span>💀 ${p.kills} убийств</span>
-                                <span>⚡ ${p.damage?.toLocaleString()} урона</span>
+                                <span>💀 ${p.kills}</span>
+                                <span>⚡ ${p.damage?.toLocaleString()}</span>
                             </div>
                         </div>
                         ${p.video_link ? `<a href="${p.video_link}" target="_blank" style="color:#ffd966;">🎥</a>` : ''}
@@ -698,11 +711,37 @@
             const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } });
             const stats = await res.json();
             const container = document.getElementById('myStatsList');
+            const metricsDiv = document.getElementById('myStatsMetrics');
             container.innerHTML = '';
+
             if (!stats.length) {
+                metricsDiv.innerHTML = '';
                 container.innerHTML = '<div style="text-align:center; padding:40px;">📭 Нет статистики. Загрузите скриншот!</div>';
                 return;
             }
+
+            // Расчёт метрик
+            const verifiedStats = stats.filter(s => s.verified);
+            const maxDamage = verifiedStats.length ? Math.max(...verifiedStats.map(s => s.damage)) : 0;
+            const avgDamage = verifiedStats.length ? Math.round(verifiedStats.reduce((sum, s) => sum + s.damage, 0) / verifiedStats.length) : 0;
+
+            metricsDiv.innerHTML = `
+                <div class="metrics-card">
+                    <div class="metric">
+                        <div class="metric-value">${maxDamage.toLocaleString()}</div>
+                        <div class="metric-label">Максимальный урон</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${avgDamage.toLocaleString()}</div>
+                        <div class="metric-label">Средний урон</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${stats.length}</div>
+                        <div class="metric-label">Всего записей</div>
+                    </div>
+                </div>
+            `;
+
             stats.forEach(s => {
                 container.innerHTML += `
                     <div class="stat-card">
@@ -713,19 +752,19 @@
                         <div class="stat-numbers">
                             <div class="stat-number">
                                 <div class="stat-number-value">${s.kills}</div>
-                                <div class="stat-number-label">Убийства</div>
+                                <div class="stat-number-label"></div>
                             </div>
                             <div class="stat-number">
                                 <div class="stat-number-value">${s.kill_percent || 0}%</div>
-                                <div class="stat-number-label">% убийств</div>
+                                <div class="stat-number-label"></div>
                             </div>
                             <div class="stat-number">
                                 <div class="stat-number-value">${s.hs_percent || 0}%</div>
-                                <div class="stat-number-label">HS %</div>
+                                <div class="stat-number-label"></div>
                             </div>
                             <div class="stat-number">
                                 <div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div>
-                                <div class="stat-number-label">Урон</div>
+                                <div class="stat-number-label"></div>
                             </div>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -775,10 +814,10 @@
                             <span class="stat-date">${new Date(s.date).toLocaleDateString()}</span>
                         </div>
                         <div class="stat-numbers">
-                            <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label">Убийства</div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label">% убийств</div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label">HS %</div></div>
-                            <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label">Урон</div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.kills}</div><div class="stat-number-label"></div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.kill_percent || 0}%</div><div class="stat-number-label"></div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.hs_percent || 0}%</div><div class="stat-number-label"></div></div>
+                            <div class="stat-number"><div class="stat-number-value">${s.damage?.toLocaleString() || 0}</div><div class="stat-number-label"></div></div>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                             <div>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥 Видео</a>` : ''} ${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : ''}</div>
