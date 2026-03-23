@@ -18,45 +18,67 @@ function loadData() {
             data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
             console.log(`📁 Загружено: ${data.users.length} пользователей, ${data.stats.length} записей`);
         } else {
-            // Создаём демо-данные для админки
-            const adminHash = bcrypt.hashSync('gtafak', 10);
-            data = {
-                users: [
-                    { id: 1, username: 'admin', password: adminHash, game_nick: 'Admin', role: 'admin' },
-                    { id: 2, username: 'player1', password: bcrypt.hashSync('123', 10), game_nick: 'Flik_Homixide', role: 'user' }
-                ],
-                stats: [
-                    {
-                        id: 1001,
-                        username: 'player1',
-                        game_nick: 'Flik_Homixide',
-                        kills: 142,
-                        kill_percent: 33,
-                        hs_percent: 5,
-                        damage: 16257,
-                        video_link: '',
-                        screenshot: '',
-                        verified: false,
-                        date: new Date().toISOString()
-                    },
-                    {
-                        id: 1002,
-                        username: 'player2',
-                        game_nick: 'Andrey_Chikatilov',
-                        kills: 80,
-                        kill_percent: 26,
-                        hs_percent: 10,
-                        damage: 10948,
-                        video_link: '',
-                        screenshot: '',
-                        verified: false,
-                        date: new Date().toISOString()
-                    }
-                ]
-            };
-            saveData();
-            console.log('📁 Создан новый файл данных с демо-записями для админки');
+            data = { users: [], stats: [] };
         }
+        
+        // Проверяем наличие админа
+        const adminExists = data.users.find(u => u.username === 'admin');
+        if (!adminExists) {
+            const adminHash = bcrypt.hashSync('gtafak', 10);
+            data.users.push({ id: 1, username: 'admin', password: adminHash, game_nick: 'Admin', role: 'admin' });
+            console.log('✅ Админ создан');
+        }
+        
+        // Проверяем наличие тестовых записей (если нет ни одной неподтверждённой)
+        const unverifiedCount = data.stats.filter(s => !s.verified).length;
+        if (unverifiedCount === 0) {
+            // Добавляем тестовые записи для админки
+            const testStats = [
+                {
+                    id: Date.now() + 1,
+                    username: 'player1',
+                    game_nick: 'Flik_Homixide',
+                    kills: 142,
+                    kill_percent: 33,
+                    hs_percent: 5,
+                    damage: 16257,
+                    video_link: '',
+                    screenshot: '',
+                    verified: false,
+                    date: new Date().toISOString()
+                },
+                {
+                    id: Date.now() + 2,
+                    username: 'player2',
+                    game_nick: 'Andrey_Chikatilov',
+                    kills: 80,
+                    kill_percent: 26,
+                    hs_percent: 10,
+                    damage: 10948,
+                    video_link: '',
+                    screenshot: '',
+                    verified: false,
+                    date: new Date().toISOString()
+                },
+                {
+                    id: Date.now() + 3,
+                    username: 'player3',
+                    game_nick: 'Avi_Effexx',
+                    kills: 86,
+                    kill_percent: 26,
+                    hs_percent: 6,
+                    damage: 11039,
+                    video_link: '',
+                    screenshot: '',
+                    verified: false,
+                    date: new Date().toISOString()
+                }
+            ];
+            data.stats.push(...testStats);
+            saveData();
+            console.log('📊 Добавлены тестовые записи в админ-панель');
+        }
+        
     } catch(e) { console.error('Ошибка загрузки:', e); }
 }
 
@@ -165,7 +187,8 @@ app.get('/api/stats/my', async (req, res) => {
 });
 
 app.get('/api/stats/all', async (req, res) => {
-    console.log(`📋 Запрос всех статистик: всего ${data.stats.length}`);
+    const unverified = data.stats.filter(s => !s.verified);
+    console.log(`📋 Запрос всех статистик: всего ${data.stats.length}, неподтверждённых: ${unverified.length}`);
     res.json(data.stats);
 });
 
@@ -212,5 +235,6 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ Сервер на порту ${PORT}`);
     console.log(`👑 Админ: admin / gtafak`);
-    console.log(`📊 В админ-панели уже есть ${data.stats.filter(s => !s.verified).length} неподтверждённых записей`);
+    const unverifiedCount = data.stats.filter(s => !s.verified).length;
+    console.log(`📊 В админ-панели ${unverifiedCount} неподтверждённых записей`);
 });
