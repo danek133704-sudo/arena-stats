@@ -1,187 +1,240 @@
-import express from 'express';
-import pkg from 'pg';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import cors from 'cors';
-
-const { Pool } = pkg;
-
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const bcrypt = require('bcryptjs');
 const app = express();
-
-// ================= CONFIG =================
-
-if (!process.env.DATABASE_URL) {
-  console.error('❌ DATABASE_URL missing');
-  process.exit(1);
-}
-
 const PORT = process.env.PORT || 3000;
-const SECRET = 'supersecret';
 
-// ================= MIDDLEWARE =================
-
-app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
-// ================= DB =================
+const DATA_FILE = path.join(__dirname, 'data.json');
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
+let data = { users: [], stats: [] };
 
-// ================= AUTH =================
+function loadData() {
+    try {
+        if (fs.existsSync(DATA_FILE)) {
+            data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+            console.log(`📁 Загружено: ${data.users.length} пользователей, ${data.stats.length} записей`);
+        } else {
+            data = { users: [], stats: [] };
+        }
+        
+        // Админ
+        const adminExists = data.users.find(u => u.username === 'admin');
+        if (!adminExists) {
+            const adminHash = bcrypt.hashSync('gtafak', 10);
+            data.users.push({ id: 1, username: 'admin', password: adminHash, game_nick: 'Admin', role: 'admin' });
+            console.log('✅ Админ создан');
+        }
+        
+        // Тестовые записи для админки (всегда 3 штуки)
+        const unverifiedCount = data.stats.filter(s => !s.verified).length;
+        if (unverifiedCount < 3) {
+            data.stats = data.stats.filter(s => s.verified);
+            const testStats = [
+                {
+                    id: Date.now() + 1,
+                    username: 'player1',
+                    game_nick: 'Flik_Homixide',
+                    kills: 142,
+                    kill_percent: 33,
+                    hs_percent: 5,
+                    damage: 16257,
+                    video_link: '',
+                    screenshot: '',
+                    verified: false,
+                    date: new Date().toISOString()
+                },
+                {
+                    id: Date.now() + 2,
+                    username: 'player2',
+                    game_nick: 'Andrey_Chikatilov',
+                    kills: 80,
+                    kill_percent: 26,
+                    hs_percent: 10,
+                    damage: 10948,
+                    video_link: '',
+                    screenshot: '',
+                    verified: false,
+                    date: new Date().toISOString()
+                },
+                {
+                    id: Date.now() + 3,
+                    username: 'player3',
+                    game_nick: 'Avi_Effexx',
+                    kills: 86,
+                    kill_percent: 26,
+                    hs_percent: 6,
+                    damage: 11039,
+                    video_link: '',
+                    screenshot: '',
+                    verified: false,
+                    date: new Date().toISOString()
+                }
+            ];
+            data.stats.push(...testStats);
+            saveData();
+            console.log('📊 Добавлены тестовые записи в админ-панель');
+        }
+        
+    } catch(e) { console.error('Ошибка загрузки:', e); }
+}
+
+function saveData() {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+    console.log('💾 Данные сохранены');
+}
+
+loadData();
 
 app.post('/api/register', async (req, res) => {
-  try {
-    const { username, password, gameNick } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Нет данных' });
+    try {
+        const { username, password, gameNick } = req.body;
+        if (data.users.find(u => u.username === username)) {
+            return res.status(400).json({ error: 'Пользователь уже существует' });
+        }
+        const hash = bcrypt.hashSync(password, 10);
+        data.users.push({
+            id: Date.now(),
+            username,
+            password: hash,
+            game_nick: gameNick || username,
+            role: 'user'
+        });
+        saveData();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
-
-    const hash = await bcrypt.hash(password, 10);
-
-    const user = await pool.query(
-      `INSERT INTO users (username, password, game_nick)
-       VALUES ($1,$2,$3) RETURNING *`,
-      [username, hash, gameNick]
-    );
-
-    res.json(user.rows[0]);
-  } catch (e) {
-    console.error(e);
-    res.status(400).json({ error: 'Пользователь уже существует' });
-  }
 });
 
 app.post('/api/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    const user = await pool.query(
-      `SELECT * FROM users WHERE username=$1`,
-      [username]
-    );
-
-    if (!user.rows.length) {
-      return res.status(400).json({ error: 'Нет пользователя' });
+    try {
+        const { username, password } = req.body;
+        const user = data.users.find(u => u.username === username);
+        if (!user) {
+            return res.status(400).json({ error: 'Пользователь не найден' });
+        }
+        const match = bcrypt.compareSync(password, user.password);
+        if (!match) {
+            return res.status(400).json({ error: 'Неверный пароль' });
+        }
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                username: user.username,
+                gameNick: user.game_nick,
+                role: user.role
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ error: 'Ошибка входа' });
     }
-
-    const valid = await bcrypt.compare(password, user.rows[0].password);
-    if (!valid) return res.status(400).json({ error: 'Неверный пароль' });
-
-    const token = jwt.sign(user.rows[0], SECRET);
-
-    res.json({
-      token,
-      user: user.rows[0]
-    });
-  } catch (e) {
-    console.error(e);
-    res.sendStatus(500);
-  }
 });
 
-// ================= AUTH MIDDLEWARE =================
-
-function auth(req, res, next) {
-  const token = req.headers.authorization;
-  if (!token) return res.sendStatus(401);
-
-  try {
-    req.user = jwt.verify(token, SECRET);
-    next();
-  } catch {
-    res.sendStatus(403);
-  }
-}
-
-// ================= STATS =================
-
-app.post('/api/stats', auth, async (req, res) => {
-  try {
-    const { kills, damage, videoLink, screenshot } = req.body;
-
-    await pool.query(
-      `INSERT INTO stats (user_id, kills, damage, video_link, screenshot)
-       VALUES ($1,$2,$3,$4,$5)`,
-      [req.user.id, kills, damage, videoLink, screenshot]
-    );
-
-    res.json({ ok: true });
-  } catch (e) {
-    console.error(e);
-    res.sendStatus(500);
-  }
+app.put('/api/profile', async (req, res) => {
+    try {
+        const { username, gameNick } = req.body;
+        const user = data.users.find(u => u.username === username);
+        if (user) {
+            user.game_nick = gameNick;
+            saveData();
+            res.json({ success: true, user: { username: user.username, gameNick: user.game_nick, role: user.role } });
+        } else {
+            res.status(404).json({ error: 'Пользователь не найден' });
+        }
+    } catch (e) {
+        res.status(500).json({ error: 'Ошибка' });
+    }
 });
 
-app.get('/api/stats/my', auth, async (req, res) => {
-  const data = await pool.query(
-    `SELECT * FROM stats WHERE user_id=$1 ORDER BY id DESC`,
-    [req.user.id]
-  );
-
-  res.json(data.rows);
+app.post('/api/stats', async (req, res) => {
+    try {
+        const { username, kills, killPercent, hsPercent, damage, videoLink, screenshot } = req.body;
+        const user = data.users.find(u => u.username === username);
+        if (!user) return res.status(400).json({ error: 'Пользователь не найден' });
+        
+        const newStat = {
+            id: Date.now(),
+            username,
+            game_nick: user.game_nick,
+            kills: kills || 0,
+            kill_percent: killPercent || 0,
+            hs_percent: hsPercent || 0,
+            damage: damage || 0,
+            video_link: videoLink || '',
+            screenshot: screenshot || '',
+            verified: user.role === 'admin' ? true : false,
+            date: new Date().toISOString()
+        };
+        data.stats.push(newStat);
+        saveData();
+        console.log(`✅ Статистика сохранена: ${username} - ${kills} убийств, ${damage} урона`);
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Ошибка' });
+    }
 });
 
-app.get('/api/stats/all', auth, async (req, res) => {
-  if (req.user.role !== 'admin') return res.sendStatus(403);
-
-  const data = await pool.query(`
-    SELECT s.*, u.game_nick
-    FROM stats s
-    JOIN users u ON u.id = s.user_id
-    ORDER BY s.id DESC
-  `);
-
-  res.json(data.rows);
+app.get('/api/stats/my', async (req, res) => {
+    const username = req.headers.username;
+    const myStats = data.stats.filter(s => s.username === username);
+    res.json(myStats);
 });
 
-app.put('/api/stats/:id/verify', auth, async (req, res) => {
-  if (req.user.role !== 'admin') return res.sendStatus(403);
-
-  await pool.query(
-    `UPDATE stats SET verified=true WHERE id=$1`,
-    [req.params.id]
-  );
-
-  res.json({ ok: true });
+app.get('/api/stats/all', async (req, res) => {
+    const unverified = data.stats.filter(s => !s.verified);
+    console.log(`📋 Запрос всех статистик: всего ${data.stats.length}, неподтверждённых: ${unverified.length}`);
+    res.json(data.stats);
 });
 
-app.delete('/api/stats/:id', auth, async (req, res) => {
-  if (req.user.role !== 'admin') return res.sendStatus(403);
-
-  await pool.query(
-    `DELETE FROM stats WHERE id=$1`,
-    [req.params.id]
-  );
-
-  res.json({ ok: true });
+app.put('/api/stats/:id/verify', async (req, res) => {
+    const stat = data.stats.find(s => s.id == req.params.id);
+    if (stat) {
+        stat.verified = true;
+        saveData();
+        console.log(`✅ Подтверждена запись ${req.params.id}`);
+    }
+    res.json({ success: true });
 });
 
-// ================= LEADERBOARD =================
+app.delete('/api/stats/:id', async (req, res) => {
+    data.stats = data.stats.filter(s => s.id != req.params.id);
+    saveData();
+    console.log(`🗑️ Удалена запись ${req.params.id}`);
+    res.json({ success: true });
+});
 
 app.get('/api/leaderboard', async (req, res) => {
-  const data = await pool.query(`
-    SELECT u.game_nick,
-           MAX(s.kills) as kills,
-           MAX(s.damage) as damage
-    FROM stats s
-    JOIN users u ON u.id = s.user_id
-    WHERE s.verified=true
-    GROUP BY u.game_nick
-    ORDER BY kills DESC
-  `);
-
-  res.json(data.rows);
+    const leaderboard = {};
+    data.stats.forEach(stat => {
+        if (!stat.verified) return;
+        if (!leaderboard[stat.username]) {
+            leaderboard[stat.username] = {
+                username: stat.username,
+                game_nick: stat.game_nick,
+                kills: 0,
+                damage: 0,
+                video_link: stat.video_link
+            };
+        }
+        leaderboard[stat.username].kills += stat.kills;
+        leaderboard[stat.username].damage += stat.damage;
+    });
+    res.json(Object.values(leaderboard).sort((a, b) => b.kills - a.kills));
 });
 
-// ================= START =================
+app.get('/', (req, res) => {
+    res.sendFile('index.html', { root: 'public' });
+});
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('✅ Server running on port', PORT);
+app.listen(PORT, () => {
+    console.log(`✅ Сервер на порту ${PORT}`);
+    console.log(`👑 Админ: admin / gtafak`);
+    const unverifiedCount = data.stats.filter(s => !s.verified).length;
+    console.log(`📊 В админ-панели ${unverifiedCount} неподтверждённых записей`);
 });
