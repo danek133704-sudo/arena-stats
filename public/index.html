@@ -205,7 +205,6 @@
         return localNick || (currentUser?.gameNick) || (currentUser?.username) || '';
     }
 
-    // ========== АВТОРИЗАЦИЯ ==========
     async function register() {
         const payload = { username: document.getElementById('regUsername').value, password: document.getElementById('regPassword').value, gameNick: document.getElementById('regGameNick').value };
         const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -240,18 +239,39 @@
         document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
     }
     function switchMain(tab) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-        if (tab === 'leaderboard') { document.getElementById('leaderboardPanel').classList.add('active'); document.querySelector('.tabs .tab').classList.add('active'); }
-        if (tab === 'mystats') { document.getElementById('mystatsPanel').classList.add('active'); document.querySelectorAll('.tabs .tab')[1].classList.add('active'); loadMyStats(); }
-        if (tab === 'admin') { document.getElementById('adminPanel').classList.add('active'); document.getElementById('adminTabBtn').classList.add('active'); if (currentUser?.role === 'admin') loadAdminStats(); }
+        const panels = document.querySelectorAll('.tab-content');
+        const tabs = document.querySelectorAll('.tab');
+        if (!panels.length || !tabs.length) return;
+        panels.forEach(el => el.classList.remove('active'));
+        tabs.forEach(el => el.classList.remove('active'));
+        if (tab === 'leaderboard') { 
+            const panel = document.getElementById('leaderboardPanel');
+            const firstTab = document.querySelector('.tabs .tab');
+            if (panel) panel.classList.add('active');
+            if (firstTab) firstTab.classList.add('active');
+        }
+        if (tab === 'mystats') { 
+            const panel = document.getElementById('mystatsPanel');
+            const tabsList = document.querySelectorAll('.tabs .tab');
+            if (panel) panel.classList.add('active');
+            if (tabsList[1]) tabsList[1].classList.add('active');
+            loadMyStats(); 
+        }
+        if (tab === 'admin') { 
+            const panel = document.getElementById('adminPanel');
+            const adminTab = document.getElementById('adminTabBtn');
+            if (panel) panel.classList.add('active');
+            if (adminTab) adminTab.classList.add('active');
+            if (currentUser?.role === 'admin') loadAdminStats(); 
+        }
     }
 
-    // ========== ЛИДЕРБОРД ==========
     async function loadLeaderboard() {
-        const res = await fetch('/api/leaderboard');
-        allLeaderboardData = await res.json();
-        renderLeaderboard(allLeaderboardData);
+        try {
+            const res = await fetch('/api/leaderboard');
+            allLeaderboardData = await res.json();
+            renderLeaderboard(allLeaderboardData);
+        } catch(e) { console.error('Leaderboard error:', e); }
     }
     function renderLeaderboard(data) {
         const tbody = document.getElementById('leaderboardBody');
@@ -271,38 +291,40 @@
     }
     function resetLeaderboard() { document.getElementById('searchPlayerInput').value = ''; renderLeaderboard(allLeaderboardData); }
 
-    // ========== МОЯ СТАТИСТИКА ==========
     async function loadMyStats() {
         if (!currentUser) return;
-        const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } });
-        const stats = await res.json();
-        const tbody = document.getElementById('myStatsBody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        if (!stats.length) { tbody.innerHTML = '<td colspan="10">Нет данных<\/td>'; return; }
-        stats.forEach(s => {
-            tbody.innerHTML += `}。}。}。}。}。}。}。}。}。}。`;
-        });
+        try {
+            const res = await fetch('/api/stats/my', { headers: { username: currentUser.username } });
+            const stats = await res.json();
+            const tbody = document.getElementById('myStatsBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (!stats.length) { tbody.innerHTML = '<td colspan="10">Нет данных<\/td>'; return; }
+            stats.forEach(s => {
+                tbody.innerHTML += `}。}。}。}。}。}。}。}。}。}。`;
+            });
+        } catch(e) { console.error('MyStats error:', e); }
     }
     async function deleteMyStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadMyStats(); loadLeaderboard(); showStatus('uploadStatus', '✅ Удалено', 'success'); }
     async function loadAdminStats() {
         if (!currentUser || currentUser.role !== 'admin') return;
-        const res = await fetch('/api/stats/all');
-        const allStats = await res.json();
-        const unverified = allStats.filter(s => !s.verified);
-        const container = document.getElementById('adminList');
-        if (!container) return;
-        container.innerHTML = '';
-        if (!unverified.length) { container.innerHTML = '<div style="padding: 2rem;">✅ Нет ожидающих</div>'; return; }
-        unverified.forEach(s => {
-            container.innerHTML += `<div class="stat-card"><div><b>${s.game_nick || s.username}</b> <small>(${s.username})</small></div><div>💀 ${s.kills}</div><div>🎯 ${s.kill_percent||0}%</div><div>💥 HS ${s.hs_percent||0}%</div><div>⚡ ${s.damage?.toLocaleString()}</div><div>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}</div><div>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}</div><div><button class="verify" onclick="verifyStat(${s.id})">✅</button><button class="delete" onclick="deleteStat(${s.id})">🗑️</button></div></div>`;
-        });
+        try {
+            const res = await fetch('/api/stats/all');
+            const allStats = await res.json();
+            const unverified = allStats.filter(s => !s.verified);
+            const container = document.getElementById('adminList');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!unverified.length) { container.innerHTML = '<div style="padding: 2rem;">✅ Нет ожидающих</div>'; return; }
+            unverified.forEach(s => {
+                container.innerHTML += `<div class="stat-card"><div><b>${s.game_nick || s.username}</b> <small>(${s.username})</small></div><div>💀 ${s.kills}</div><div>🎯 ${s.kill_percent||0}%</div><div>💥 HS ${s.hs_percent||0}%</div><div>⚡ ${s.damage?.toLocaleString()}</div><div>${s.video_link ? `<a href="${s.video_link}" target="_blank">🎥</a>` : '—'}</div><div>${s.screenshot ? `<img src="${s.screenshot}" class="screenshot-thumb" onclick="showFullImage('${s.screenshot}')">` : '—'}</div><div><button class="verify" onclick="verifyStat(${s.id})">✅</button><button class="delete" onclick="deleteStat(${s.id})">🗑️</button></div></div>`;
+            });
+        } catch(e) { console.error('AdminStats error:', e); }
     }
     async function verifyStat(id) { await fetch(`/api/stats/${id}/verify`, { method: 'PUT' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     async function deleteStat(id) { if (!confirm('Удалить?')) return; await fetch(`/api/stats/${id}`, { method: 'DELETE' }); loadAdminStats(); loadLeaderboard(); loadMyStats(); }
     function showFullImage(src) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<img src="${src}" style="max-width:90%; max-height:90%; border-radius: 24px;">`; m.onclick = () => m.remove(); document.body.appendChild(m); }
 
-    // ========== НЕЙРОНКА ==========
     async function findMyStatsInScreenshot() {
         if (!currentImageData) return null;
         const nickToFind = getCurrentNick();
@@ -414,6 +436,7 @@
     async function sendRecognizedStats() {
         if (!currentUser) { alert('Войдите в аккаунт'); return; }
         if (!recognizedStats) { alert('Сначала распознайте ник'); return; }
+        if (!currentImageData) { alert('Сначала загрузите скриншот'); return; }
         
         showStatus('uploadStatus', '📤 Отправка...', 'success');
         try {
@@ -451,7 +474,6 @@
     async function submitManualStats() {
         if (!currentUser) { alert('Войдите в аккаунт'); return; }
         
-        // Проверка на наличие скриншота
         if (!currentImageData) {
             const warning = document.getElementById('manualWarning');
             if (warning) warning.style.display = 'block';
